@@ -31,10 +31,11 @@ python tests/integration/channels-integration.py
 python tests/integration/reconnect-integration.py
 python tests/integration/companion-integration.py
 python tests/integration/audio-integration.py
+python tests/integration/external-audio-integration.py
 python tests/integration/host-races-integration.py
 ```
 
-`tests/integration/source-integration.py` 还使用客户端 Rust 示例，请先执行上面的 `cargo build --workspace --examples`。相册的现行集成入口为 `tests/integration/channels-integration.py`。
+`tests/integration/source-integration.py` 和 `tests/integration/external-audio-integration.py` 还使用客户端 Rust 示例，请先执行上面的 `cargo build --workspace --examples`。相册的现行集成入口为 `tests/integration/channels-integration.py`。
 
 测试默认使用 `target/debug/note4-screen-scheduler.exe`；可用 `SCHEDULER_BINARY` 指定其他构建。音频及竞争测试兼容 `SCREEN_SCHEDULER_TEST_BINARY`。测试创建临时配置，使用模拟屏幕或 loopback UDP 模拟器，不读取默认个人配置或连接实体设备。
 

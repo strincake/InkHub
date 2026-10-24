@@ -193,6 +193,32 @@ impl Device {
         let value = response(result).await?;
         serde_json::from_value(value).map_err(transport)
     }
+    /// Attach one short PCM16 WAV to a frame. Success means managed acceptance.
+    /// Retry uncertain requests with exactly the same sequence, WAV and volume.
+    pub async fn play_wav(&self, sequence: u64, wav: &[u8], volume: u8) -> Result<()> {
+        if self.session.closed.load(Ordering::SeqCst) {
+            return Err(Error::Disconnected);
+        }
+        if sequence == 0 || volume > 100 || wav.len() > 98304 {
+            return Err(Error::InvalidOptions(
+                "请指定已提交画面、0～100 音量和不超过 96 KiB 的 WAV".into(),
+            ));
+        }
+        response(
+            self.session
+                .http
+                .post(format!("{}/frames/{sequence}/audio", self.session.url))
+                .bearer_auth(&self.session.token)
+                .header("content-type", "audio/wav")
+                .header("x-audio-volume", volume.to_string())
+                .body(wav.to_vec())
+                .send()
+                .await
+                .map_err(transport)?,
+        )
+        .await?;
+        Ok(())
+    }
     pub async fn next_event(&self) -> Result<Option<Event>> {
         let mut cursor = self.events.lock().await;
         loop {

@@ -87,8 +87,8 @@ def main():
    def packet(kind,connection,seq,body=b''):return b'ZL\x01'+bytes([kind])+struct.pack('>QI',connection,seq)+body
    sock.sendto(packet(1,0,1),dest);info=sock.recv(1200);connection=int.from_bytes(info[4:12],'big');name=b'UDP no heartbeat';sock.sendto(packet(2,connection,1,bytes([len(name)])+name),dest);assert sock.recv(1200)[16]==0
    sock.sendto(packet(15,connection,1),dest);assert sock.recv(1200)[16:]==bytes([0,255,255,127])
-   sock.sendto(packet(8,connection,2,b'\0'),dest);assert sock.recv(1200)[16]==2
-   checks.append('sdk_status_unknown_and_audio_explicitly_rejected')
+   sock.sendto(packet(8,connection,2,b'\0'),dest);assert sock.recv(1200)[16]==1
+   checks.append('sdk_status_unknown_and_audio_requires_valid_frame')
    sock.sendto(packet(4,connection,3,b'\0'),dest);assert sock.recv(1200)[16]==0
    sock.sendto(packet(1,0,1),dest);info=sock.recv(1200);new_connection=int.from_bytes(info[4:12],'big');assert new_connection!=connection
    sock.sendto(packet(2,new_connection,1,bytes([len(name)])+name),dest);assert sock.recv(1200)[16]==0

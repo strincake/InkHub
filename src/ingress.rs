@@ -2,7 +2,7 @@
 use super::*;
 use axum::extract::Query;
 use axum::routing::delete;
-use note4_screen_scheduler::lan::{uniform_palette, IncomingImage, Packet};
+use note4_screen_scheduler::lan::{uniform_palette, IncomingAudio, IncomingImage, Packet};
 use std::{
     collections::VecDeque,
     hash::{Hash, Hasher},
@@ -18,6 +18,8 @@ pub struct Receipt {
     pub error: Option<String>,
     #[serde(skip)]
     fingerprint: u64,
+    #[serde(skip)]
+    audio_fingerprint: Option<u64>,
 }
 pub struct Session {
     pub name: String,
@@ -150,6 +152,7 @@ pub async fn expire(a: &Arc<App>) {
     }
 }
 fn remove(i: &mut Inner, id: &str) {
+    i.audio_pending.retain(|p| p.source != id);
     i.scheduler.remove(id);
     i.images.remove(id);
     i.keys.remove(id);
@@ -232,6 +235,7 @@ fn publish(
         state: "accepted".into(),
         error: None,
         fingerprint,
+        audio_fingerprint: None,
     };
     session.sequence = sequence;
     session.receipts.push_back(receipt.clone());
@@ -239,6 +243,36 @@ fn publish(
         session.receipts.pop_front();
     }
     Ok(receipt)
+}
+// At most one short cue per image revision. A retry never replays a consumed cue.
+fn queue_audio(
+    i: &mut Inner,
+    id: &str,
+    revision: u64,
+    clip: zectrix_sdk::AudioClip,
+    volume: u8,
+    now: u64,
+) -> Result<(), (StatusCode, String)> {
+    if i.blocked
+        || i.focus_unknown
+        || i.recording
+        || i.scheduler.paused
+        || (i.mode == "device" && i.device.is_none())
+        || !i
+            .scheduler
+            .source(id)
+            .is_some_and(|s| s.valid(now) && s.revision == revision)
+    {
+        return Err((StatusCode::CONFLICT, "来源画面无效或媒体已暂停".into()));
+    }
+    i.audio_pending.retain(|p| p.source != id);
+    i.audio_pending.push(audio::Pending {
+        source: id.into(),
+        revision,
+        clip,
+        volume,
+    });
+    Ok(())
 }
 fn fingerprint(bytes: &[u8], format: &str) -> u64 {
     let mut h = std::collections::hash_map::DefaultHasher::new();
@@ -358,6 +392,50 @@ async fn receipt(
         .ok_or((StatusCode::NOT_FOUND, "回执不存在或已超出保留窗口".into()))?;
     Ok(Json(json!(r)))
 }
+async fn sound(
+    State(a): State<Arc<App>>,
+    Path((id, sequence)): Path<(String, u64)>,
+    h: HeaderMap,
+    bytes: Bytes,
+) -> ApiResult {
+    let mut i = a.inner.lock().await;
+    authorize(&i, &id, &h, a.now())?;
+    let volume = match h.get("x-audio-volume") {
+        None => 90,
+        Some(v) => v
+            .to_str()
+            .ok()
+            .and_then(|s| s.parse::<u8>().ok())
+            .filter(|v| *v <= 100)
+            .ok_or_else(|| bad("音量必须为 0～100"))?,
+    };
+    let clip = audio::decode(&bytes).map_err(bad)?;
+    let hash = fingerprint(&bytes, &volume.to_string());
+    let receipt = i.external[&id]
+        .receipts
+        .iter()
+        .find(|r| r.sequence == sequence)
+        .ok_or((StatusCode::NOT_FOUND, "画面回执不存在".into()))?;
+    let revision = receipt.revision;
+    if let Some(old) = receipt.audio_fingerprint {
+        if old != hash {
+            return Err((StatusCode::CONFLICT, "同一画面只能附加一条提示音".into()));
+        }
+    } else {
+        queue_audio(&mut i, &id, revision, clip, volume, a.now())?;
+        i.external
+            .get_mut(&id)
+            .unwrap()
+            .receipts
+            .iter_mut()
+            .find(|r| r.sequence == sequence)
+            .unwrap()
+            .audio_fingerprint = Some(hash);
+    }
+    Ok(Json(
+        json!({"sequence":sequence,"revision":revision,"state":"accepted","semantics":"accepted_by_scheduler"}),
+    ))
+}
 #[derive(Deserialize)]
 struct CursorQuery {
     #[serde(default)]
@@ -390,6 +468,10 @@ pub fn router(a: Arc<App>) -> Router {
             post(frame).get(receipt),
         )
         .route("/v1/sessions/{id}/events", get(events))
+        .route(
+            "/v1/sessions/{id}/frames/{sequence}/audio",
+            post(sound).layer(DefaultBodyLimit::max(98304)),
+        )
         .layer(DefaultBodyLimit::max(8 * 1024 * 1024))
         .with_state(a)
 }
@@ -407,6 +489,7 @@ struct Peer {
     key_ack: u64,
     last_key_send: u64,
     connect_name: String,
+    audio: Option<IncomingAudio>,
 }
 impl Peer {
     fn new(now: u64, palette: [u8; 20]) -> Self {
@@ -423,6 +506,7 @@ impl Peer {
             key_ack: 0,
             last_key_send: 0,
             connect_name: String::new(),
+            audio: None,
         }
     }
 }
@@ -463,7 +547,34 @@ pub async fn udp(a: Arc<App>, socket: Arc<tokio::net::UdpSocket>) {
               if img.state==1&&img.complete(){match img.decode(&p.palette){Ok(pixels)=>{let gray=image::GrayImage::from_raw(400,300,pixels).unwrap();let mut out=Cursor::new(vec![]);let result=image::DynamicImage::ImageLuma8(gray).write_to(&mut out,image::ImageFormat::Png);if result.is_ok(){let format=match img.bpp{2=>"gray4",4=>"gray16",_=>"mono"};let bytes=out.into_inner();let hash=fingerprint(&bytes,format);let mut i=a.inner.lock().await;if publish(&mut i,p.id.as_ref().unwrap(),img.id as u64,hash,bytes,format,now).is_ok(){img.state=3;}else{img.state=4;}}else{img.state=4;}},Err(_)=>img.state=4}p.last_image=img.id;p.last_result=if img.state==3{0}else{7};}
               body.push(img.state);body.extend(img.bitmap.to_be_bytes());
             }}else{body[0]=2;}},
-            12 if packet.body.is_empty()=>{let (id,bitmap,state)=p.image.as_ref().map(|m|(m.id,m.bitmap,m.state)).unwrap_or((0,0,0));body.extend([2,state,0]);body.extend(id.to_be_bytes());body.extend(bitmap.to_be_bytes());body.extend(0u32.to_be_bytes());body.extend(p.last_image.to_be_bytes());body.push(p.last_result);body.extend(0u32.to_be_bytes());body.push(0);},
+            8 if packet.body.len()==1=>{
+              let volume=packet.body[0];
+              if let Some(sound)=p.audio.as_ref().filter(|s|s.id==packet.sequence){if sound.volume!=volume{body[0]=2;}}
+              else if volume>100||packet.sequence<=p.control{body[0]=2;}
+              else{let i=a.inner.lock().await;let source=i.scheduler.source(p.id.as_ref().unwrap());
+                if i.blocked||i.focus_unknown||i.recording||i.scheduler.paused||(i.mode=="device"&&i.device.is_none())||!source.is_some_and(|s|s.valid(now)){body[0]=1;}
+                else{p.audio=Some(IncomingAudio::new(packet.sequence,volume,source.unwrap().revision,i.media_epoch));p.control=packet.sequence;}}
+            },
+            9=>{if packet.body.len()>=5{let id=u32::from_be_bytes(packet.body[..4].try_into().unwrap());if let Some(sound)=p.audio.as_mut().filter(|s|s.id==id){sound.chunk(packet.sequence,&packet.body[4..]);}}continue;},
+            10 if packet.body.len()==11=>{
+              let id=u32::from_be_bytes(packet.body[..4].try_into().unwrap());let total=u32::from_be_bytes(packet.body[4..8].try_into().unwrap());let tail=u16::from_be_bytes(packet.body[8..10].try_into().unwrap());
+              if let Some(sound)=p.audio.as_mut().filter(|s|s.id==id){
+                if packet.body[10]!=0||sound.end.is_some_and(|end|end!=(total,tail)){body[0]=2;}
+                else if sound.end.is_none(){
+                  let mut i=a.inner.lock().await;
+                  let accepted=if sound.epoch!=i.media_epoch{false}else{sound.finish(total,tail).ok().is_some_and(|clip|queue_audio(&mut i,p.id.as_ref().unwrap(),sound.revision,clip,sound.volume,now).is_ok())};
+                  sound.end=Some((total,tail));sound.result=Some(if accepted{0}else{7});p.control=p.control.max(packet.sequence);
+                }
+              }else{body[0]=2;}
+            },
+            11 if packet.body.len()==4=>{
+              let id=u32::from_be_bytes(packet.body[..4].try_into().unwrap());
+              if let Some(sound)=p.audio.as_mut().filter(|s|s.id==id){
+                a.inner.lock().await.audio_pending.retain(|s|!(Some(&s.source)==p.id.as_ref()&&s.revision==sound.revision));
+                sound.result=Some(4);sound.end.get_or_insert((0,0));
+              }else{body[0]=2;}
+            },
+            12 if packet.body.is_empty()=>{let (id,bitmap,state)=p.image.as_ref().map(|m|(m.id,m.bitmap,m.state)).unwrap_or((0,0,0));body.extend([2,state,0]);body.extend(id.to_be_bytes());body.extend(bitmap.to_be_bytes());body.extend(0u32.to_be_bytes());body.extend(p.last_image.to_be_bytes());body.push(p.last_result);let (audio_id,audio_result)=p.audio.as_ref().filter(|s|s.result.is_some()).map(|s|(s.id,s.result.unwrap())).unwrap_or((0,0));body.extend(audio_id.to_be_bytes());body.push(audio_result);},
             _=>body[0]=2,
            }}
           }

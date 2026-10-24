@@ -14,7 +14,7 @@ zectrix-sdk = { package = "screen-scheduler-client", path = "../screen-scheduler
 
 上面的路径以调用方项目与 `screen-scheduler` 同级为例，请按实际克隆位置调整。
 
-保留常用 `use zectrix_sdk::{Device, OpenOptions, ImageFormat, Event}` 和原图像/按键调用代码。目标地址改成 `http://127.0.0.1:38477`，设置环境变量 `SCREEN_SCHEDULER_KEY`（从管理界面复制），或改用 `Device::open_with_key(options, key)`。底层设备 palette/status/音频方法并未全部移植，使用这些方法的程序需单独适配。
+保留常用 `use zectrix_sdk::{Device, OpenOptions, ImageFormat, Event}` 和原图像/按键调用代码。目标地址改成 `http://127.0.0.1:38477`，设置环境变量 `SCREEN_SCHEDULER_KEY`（从管理界面复制），或改用 `Device::open_with_key(options, key)`。底层设备 palette/status/录音方法及 PCM play 未移植；短音频使用 `play_wav(sequence, wav, volume)`，其中 sequence 来自 submit 回执。Python 对应 `device.play_wav(wav, sequence=..., volume=...)`。仅支持最长 3 秒的单声道 16 kHz PCM16 WAV，每画面一条提示音，成功表示已托管接收，重复相同请求不会重播。
 
 `submit_with_sequence` 可按原序号重试不确定的提交；`last_sequence` 可获取最后分配序号。重试必须使用完全相同的 PNG 和格式。请求失败时不自动改序号重发。
 

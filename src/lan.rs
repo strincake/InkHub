@@ -1,5 +1,71 @@
-//! Bounded subset of the vendor LAN v1 wire format. No audio emulation.
+//! Bounded subset of the vendor LAN v1 wire format.
 use std::io::Read;
+
+/// Buffer a complete short cue; missing/conflicting packets are never played.
+pub struct IncomingAudio {
+    pub id: u32,
+    pub volume: u8,
+    pub revision: u64,
+    pub epoch: u64,
+    pub end: Option<(u32, u16)>,
+    pub result: Option<u8>,
+    frames: std::collections::BTreeMap<u32, Vec<u8>>,
+}
+impl IncomingAudio {
+    pub fn new(id: u32, volume: u8, revision: u64, epoch: u64) -> Self {
+        Self {
+            id,
+            volume,
+            revision,
+            epoch,
+            end: None,
+            result: None,
+            frames: Default::default(),
+        }
+    }
+    pub fn chunk(&mut self, sequence: u32, data: &[u8]) {
+        if self.result.is_some() {
+            return;
+        }
+        let valid = sequence < 50
+            && !data.is_empty()
+            && data.len() <= 1180
+            && opus::packet::get_nb_samples(data, 16000).ok() == Some(960)
+            && opus::packet::get_nb_channels(data).ok() == Some(opus::Channels::Mono);
+        if !valid || self.frames.get(&sequence).is_some_and(|old| old != data) {
+            self.result = Some(7);
+        } else {
+            self.frames.insert(sequence, data.to_vec());
+        }
+    }
+    pub fn finish(&mut self, total: u32, tail: u16) -> Result<zectrix_sdk::AudioClip, String> {
+        self.end = Some((total, tail));
+        if self.result.is_some()
+            || !(1..=50).contains(&total)
+            || !(1..=960).contains(&tail)
+            || self.frames.len() != total as usize
+            || self.frames.keys().copied().ne(0..total)
+        {
+            return Err("音频分片缺失或长度无效".into());
+        }
+        let mut decoder =
+            opus::Decoder::new(16000, opus::Channels::Mono).map_err(|e| e.to_string())?;
+        let mut samples = Vec::with_capacity(total as usize * 960);
+        for data in self.frames.values() {
+            let mut pcm = [0; 960];
+            if decoder
+                .decode(data, &mut pcm, false)
+                .map_err(|e| e.to_string())?
+                != 960
+            {
+                return Err("音频帧长度无效".into());
+            }
+            samples.extend(pcm);
+        }
+        samples.truncate((total as usize - 1) * 960 + tail as usize);
+        Ok(zectrix_sdk::AudioClip { samples })
+    }
+}
 #[derive(Clone, Debug)]
 pub struct Packet {
     pub kind: u8,

@@ -1,6 +1,44 @@
 use note4_screen_scheduler::lan::*;
 use std::io::Write;
 
+fn opus_frames() -> Vec<Vec<u8>> {
+    let mut enc =
+        opus::Encoder::new(16000, opus::Channels::Mono, opus::Application::Audio).unwrap();
+    (0..2)
+        .map(|_| enc.encode_vec(&[0; 960], 1180).unwrap())
+        .collect()
+}
+#[test]
+fn audio_reorders_deduplicates_and_preserves_tail() {
+    let frames = opus_frames();
+    let mut audio = IncomingAudio::new(9, 50, 1, 0);
+    audio.chunk(1, &frames[1]);
+    audio.chunk(0, &frames[0]);
+    audio.chunk(0, &frames[0]);
+    assert_eq!(audio.finish(2, 123).unwrap().samples.len(), 1083);
+}
+#[test]
+fn audio_rejects_missing_conflicting_malformed_and_oversized_data() {
+    let frames = opus_frames();
+    let mut audio = IncomingAudio::new(9, 50, 1, 0);
+    audio.chunk(1, &frames[1]);
+    assert!(audio.finish(2, 960).is_err());
+    for (seq, data) in [(0, vec![0; 1181]), (50, frames[0].clone()), (0, vec![])] {
+        let mut audio = IncomingAudio::new(9, 50, 1, 0);
+        audio.chunk(seq, &data);
+        assert!(audio.finish(1, 960).is_err());
+    }
+    let mut audio = IncomingAudio::new(9, 50, 1, 0);
+    audio.chunk(0, &frames[0]);
+    audio.chunk(0, &[0]);
+    assert!(audio.finish(1, 960).is_err());
+    for (total, tail) in [(0, 0), (51, 960), (1, 0), (1, 961)] {
+        let mut audio = IncomingAudio::new(9, 50, 1, 0);
+        audio.chunk(0, &frames[0]);
+        assert!(audio.finish(total, tail).is_err());
+    }
+}
+
 #[test]
 fn reassembles_many_chunks_out_of_order() {
     let mut seed = 19u32;

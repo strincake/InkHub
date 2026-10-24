@@ -95,6 +95,19 @@ class Device:
     def receipt(self,sequence):
         return self._request("GET",f"{self._path}/frames/{sequence}")
 
+    def play_wav(self,wav,sequence=None,volume=90):
+        """Attach one short PCM16 WAV to a submitted frame; returns managed acceptance.
+
+        Retry with the same sequence, WAV and volume after an uncertain response.
+        Playback waits for this frame to be displayed and is never automatically replayed.
+        """
+        if self._closed:
+            raise SchedulerError(401,"来源连接已结束，请显式重新连接")
+        sequence=self._seq if sequence is None else sequence
+        if sequence<=0 or not isinstance(volume,int) or not 0<=volume<=100:
+            raise ValueError("请先提交画面，音量必须为 0～100")
+        return self._request("POST",f"{self._path}/frames/{sequence}/audio",wav,{"Content-Type":"audio/wav","x-audio-volume":str(volume)})
+
     def next_event(self,timeout=None):
         with self._event_lock:
             deadline=None if timeout is None else time.monotonic()+timeout
