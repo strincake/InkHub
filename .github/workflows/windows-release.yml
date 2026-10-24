@@ -27,6 +27,21 @@ jobs:
       - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
           python-version: '3.14.9'
+      - name: Validate release version
+        env:
+          INPUT_TAG: ${{ inputs.release_tag }}
+          PUBLISH_DRAFT: ${{ inputs.publish_draft }}
+        shell: pwsh
+        run: |
+          $version = python -c 'import tomllib; print(tomllib.load(open("Cargo.toml","rb"))["package"]["version"])'
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $tag = $env:INPUT_TAG
+          if ($env:GITHUB_REF_TYPE -eq 'tag') { $tag = $env:GITHUB_REF_NAME }
+          if ($env:GITHUB_REF_TYPE -eq 'tag' -or $env:PUBLISH_DRAFT -eq 'true') {
+            if ($tag -ne "v$version") {
+              throw "Release tag '$tag' does not match Cargo.toml version 'v$version'. Update Cargo.toml and Cargo.lock before tagging."
+            }
+          }
       - name: Prepare compiler toolchain
         shell: pwsh
         run: |
@@ -83,7 +98,10 @@ jobs:
           version=$(python3 -c 'import tomllib; print(tomllib.load(open("Cargo.toml","rb"))["package"]["version"])')
           tag="$INPUT_TAG"
           if [ "$GITHUB_REF_TYPE" = tag ]; then tag="$GITHUB_REF_NAME"; fi
-          test "$tag" = "v$version"
+          if [ "$tag" != "v$version" ]; then
+            echo "::error::Release tag '$tag' does not match Cargo.toml version 'v$version'."
+            exit 1
+          fi
           if gh release view "$tag" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
             echo "Release $tag already exists; preserving its notes and assets."
             exit 0
