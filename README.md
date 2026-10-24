@@ -149,4 +149,4 @@ Windows 安装、用户数据、自启、打包及草稿 Release 流程见[Windo
 
 ## 文档与许可证
 
-完整入口见[文档索引](docs/README.md)。设备 SDK、Opus 与工作搭子插件的已有许可证和声明均已保留，详见[第三方声明](THIRD_PARTY_NOTICES.md)。主项目尚未指定统一开源许可证，公开发布前应由项目所有者确定。
+完整入口见[文档索引](docs/README.md)。设备 SDK、Opus 与工作搭子插件的已有许可证和声明均已保留，详见[第三方声明](THIRD_PARTY_NOTICES.md)。主项目采用 [MIT 许可证](LICENSE)，允许使用、修改、分发及商业使用；分发时须保留版权和许可声明。第三方组件遵循各自的许可证。

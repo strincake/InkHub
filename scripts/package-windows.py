@@ -19,7 +19,7 @@ def main():
     for dll in (stage/'runtime/python').glob('vcruntime*.dll'):shutil.copy2(dll,stage/dll.name)
     shutil.copytree(ROOT/'artifacts/windows-runtime/licenses',stage/'licenses')
     shutil.copy2(ROOT/'artifacts/tools/inno/license.txt',stage/'licenses/Inno-Setup-LICENSE.txt')
-    for source,name in [('THIRD_PARTY_NOTICES.md','THIRD_PARTY_NOTICES.md'),('vendor/zectrix-local-push-sdk/LICENSE','Zectrix-SDK-MIT.txt'),('vendor/zectrix-local-push-sdk/LICENSES/Opus-COPYING.txt','Opus-COPYING.txt'),('plugins/codex-companion/LICENSE','Codex-companion-LICENSE.txt'),('plugins/codex-companion/THIRD_PARTY_NOTICES.md','Codex-companion-NOTICES.md')]:shutil.copy2(ROOT/source,stage/'licenses'/name)
+    for source,name in [('LICENSE','InkHub-MIT.txt'),('THIRD_PARTY_NOTICES.md','THIRD_PARTY_NOTICES.md'),('vendor/zectrix-local-push-sdk/LICENSE','Zectrix-SDK-MIT.txt'),('vendor/zectrix-local-push-sdk/LICENSES/Opus-COPYING.txt','Opus-COPYING.txt'),('plugins/codex-companion/LICENSE','Codex-companion-LICENSE.txt'),('plugins/codex-companion/THIRD_PARTY_NOTICES.md','Codex-companion-NOTICES.md')]:shutil.copy2(ROOT/source,stage/'licenses'/name)
     shutil.copy2(ROOT/'packaging/windows/InkHub.ico',stage/'assets/InkHub.ico')
     (stage/'runtime-layout.json').write_text(json.dumps({'schema':1,'version':version,'platform':'windows-x64','python':'runtime/python/python.exe'},indent=2)+'\n',encoding='utf-8')
     source_commit=subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip()

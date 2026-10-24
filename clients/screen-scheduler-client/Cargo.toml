@@ -2,6 +2,7 @@
 name = "screen-scheduler-client"
 version = "0.1.0"
 edition = "2021"
+license = "MIT"
 description = "HTTP producer SDK for the local Note4 screen scheduler"
 
 [dependencies]
