@@ -40,6 +40,8 @@
 2. **集成 HTTP 推送 SDK**：集成本项目自带的 HTTP 推送 SDK。对于已经集成 [zectrix-local-push-sdk](https://github.com/itopinion/zectrix-local-push-sdk) 的项目，也仅需进行少量修改即可额外集成。
 3. **编写 InkHub 插件**：对于尚未集成 [zectrix-local-push-sdk](https://github.com/itopinion/zectrix-local-push-sdk)、尚处于概念状态的想法，您可以考虑编写一个符合 InkHub 规范的轻量 Python 插件直接接入 InkHub，该方式可以额外获得：注册多个内容通道的能力；将设置页集成进入InkHub便于统一操作的能力。
 
+快速入门编写插件， 可阅读[plugin-development](https://github.com/strincake/screen-scheduler/blob/main/docs/guides/plugin-development.md)，或将该链接传递给AI。
+
 ![插件设置页](docs/images/插件设置页.png)
 *插件内嵌设置页*
 
@@ -52,6 +54,7 @@
 ## 怎么使用
 
 该项目目前仅编译了 Windows 端，你可以通过 [GitHub Releases](https://github.com/strincake/screen-scheduler/releases) 进行下载；程序运行后会在托盘驻留，并使用浏览器网页作为前端展示。
+其他平台如想使用需自行编译，请参考后续的章节。
 
 ## 当前局限
 
