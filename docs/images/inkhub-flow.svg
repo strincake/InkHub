@@ -1,0 +1,113 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="620" viewBox="0 0 1440 620" role="img" aria-labelledby="title desc">
+  <title id="title">墨枢 InkHub：从多个内容来源到一块墨水屏</title>
+  <desc id="desc">原 SDK 程序通过 UDP 托管入口、外部应用通过 HTTP 推送 SDK、本地插件通过 Python 插件接口接入 InkHub，映射成多个内容通道。每个通道独立设置优先级、最低展示时间、有效期和临时或常显规则，统一调度形成动态显示队列，再由 ZECTRIX 本地推送 SDK 发送到 NOTE4 墨水屏。一个插件可以注册多个通道。图中通道和队列仅为示例。</desc>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M1 1 9 5 1 9" fill="none" stroke="#92a5bf" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker>
+    <style>
+      text { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Microsoft YaHei', 'Noto Sans CJK SC', sans-serif; fill: #e3eaf6; }
+      .title { font-size: 29px; font-weight: 700; }
+      .subtitle { font-size: 15px; fill: #a3b2ca; }
+      .step { font-size: 18px; font-weight: 650; }
+      .label { font-size: 18px; font-weight: 600; }
+      .detail { font-size: 14px; fill: #a3b2ca; }
+      .small { font-size: 13px; fill: #a3b2ca; }
+      .wire { fill: none; stroke: #92a5bf; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+      .card { fill: #263449; stroke: #42536d; stroke-width: 1.3; }
+    </style>
+  </defs>
+
+  <rect x="1" y="1" width="1438" height="618" rx="22" fill="#182234" stroke="#34445c"/>
+  <text x="38" y="53" class="title">墨枢 InkHub</text>
+  <text x="38" y="81" class="subtitle">连接多个内容来源，让一块墨水屏有序呈现</text>
+  <rect x="352" y="112" width="708" height="448" rx="18" fill="#203045" stroke="#3a4e69"/>
+
+  <text x="38" y="144" class="step">01　多来源接入</text>
+  <text x="376" y="144" class="step">02　通道与独立规则</text>
+  <text x="836" y="144" class="step">03　显示队列</text>
+  <text x="1100" y="144" class="step">04　推送至设备</text>
+
+  <!-- Three entry points; the plugin entry branches into multiple channels. -->
+  <rect x="38" y="175" width="252" height="84" rx="12" class="card"/>
+  <text x="58" y="207" class="label">原 SDK 程序</text>
+  <text x="58" y="233" class="detail">原 SDK 接入 · UDP 托管</text>
+  <rect x="38" y="279" width="252" height="84" rx="12" class="card"/>
+  <text x="58" y="311" class="label">外部应用</text>
+  <text x="58" y="337" class="detail">HTTP 推送 SDK</text>
+  <rect x="38" y="434" width="252" height="84" rx="12" class="card"/>
+  <text x="58" y="466" class="label">InkHub 插件</text>
+  <text x="58" y="492" class="detail">Python 插件接口 · 可注册多通道</text>
+  <path d="M290 217 H376" class="wire" marker-end="url(#arrow)"/>
+  <path d="M290 321 H376" class="wire" marker-end="url(#arrow)"/>
+  <path d="M290 476 H324 M324 425 V517" class="wire"/>
+  <path d="M324 425 H376" class="wire" marker-end="url(#arrow)"/>
+  <path d="M324 517 H376" class="wire" marker-end="url(#arrow)"/>
+  <circle cx="324" cy="476" r="3.5" fill="#92a5bf"/>
+
+  <!-- Each channel carries its own priority and display policy. -->
+  <rect x="376" y="175" width="348" height="84" rx="12" class="card"/>
+  <rect x="376" y="194" width="4" height="46" rx="2" fill="#e7a383"/>
+  <text x="396" y="207" class="label">通道 A</text>
+  <rect x="615" y="191" width="90" height="25" rx="12" fill="#49382f"/>
+  <text x="660" y="209" text-anchor="middle" font-size="13" style="fill:#f3bd9f">高优先级</text>
+  <text x="396" y="235" class="detail">临时任务 · 最低展示时间 · 有效期</text>
+
+  <rect x="376" y="279" width="348" height="84" rx="12" class="card"/>
+  <rect x="376" y="298" width="4" height="46" rx="2" fill="#9bb6ee"/>
+  <text x="396" y="311" class="label">通道 B</text>
+  <rect x="615" y="295" width="90" height="25" rx="12" fill="#334767"/>
+  <text x="660" y="313" text-anchor="middle" font-size="13" style="fill:#bed0ff">中优先级</text>
+  <text x="396" y="339" class="detail">临时任务 · 最低展示时间 · 有效期</text>
+
+  <rect x="376" y="383" width="348" height="84" rx="12" class="card"/>
+  <rect x="376" y="402" width="4" height="46" rx="2" fill="#94c9b5"/>
+  <text x="396" y="415" class="label">通道 C</text>
+  <rect x="615" y="399" width="90" height="25" rx="12" fill="#2e4945"/>
+  <text x="660" y="417" text-anchor="middle" font-size="13" style="fill:#b3dfce">低优先级</text>
+  <text x="396" y="443" class="detail">常显来源 · 展示时长 · 空闲回落</text>
+
+  <rect x="376" y="487" width="348" height="60" rx="12" class="card"/>
+  <rect x="376" y="502" width="4" height="30" rx="2" fill="#94c9b5"/>
+  <text x="396" y="513" class="label">通道 D</text>
+  <text x="396" y="535" class="small">常显来源 · 独立规则</text>
+  <rect x="615" y="501" width="90" height="25" rx="12" fill="#2e4945"/>
+  <text x="660" y="519" text-anchor="middle" font-size="13" style="fill:#b3dfce">低优先级</text>
+  <text x="529" y="476" text-anchor="middle" class="small">⋮</text>
+  <!-- Lower plugin branch points to the center of channel D. -->
+  <path d="M724 217 H757 M724 321 H757 M724 425 H757 M724 517 H757 M757 217 V517 M757 350 H820" class="wire" marker-end="url(#arrow)"/>
+
+  <!-- A live scheduling view, not a fixed FIFO job list. -->
+  <rect x="820" y="220" width="216" height="260" rx="14" fill="#263449" stroke="#536b8c" stroke-width="1.5"/>
+  <text x="840" y="252" class="label">统一调度</text>
+  <text x="840" y="276" class="small">按优先级与规则动态更新</text>
+  <rect x="836" y="294" width="184" height="36" rx="7" fill="#49382f"/>
+  <circle cx="852" cy="312" r="4" fill="#e7a383"/>
+  <text x="866" y="317" font-size="15" font-weight="600">A</text>
+  <text x="1004" y="317" text-anchor="end" class="small">当前显示</text>
+  <rect x="836" y="338" width="184" height="34" rx="7" fill="#304159"/>
+  <text x="849" y="360" font-size="15">B</text><text x="1004" y="360" text-anchor="end" class="small">等待显示</text>
+  <rect x="836" y="380" width="184" height="34" rx="7" fill="#304159"/>
+  <text x="849" y="402" font-size="15">C</text><text x="1004" y="402" text-anchor="end" class="small">回落候选</text>
+  <rect x="836" y="422" width="184" height="34" rx="7" fill="#304159"/>
+  <text x="849" y="444" font-size="15">D</text><text x="1004" y="444" text-anchor="end" class="small">回落候选</text>
+  <text x="928" y="512" text-anchor="middle" class="detail">高优先级切入 · 结束后回落</text>
+
+  <path d="M1036 350 H1098" class="wire" marker-end="url(#arrow)"/>
+  <rect x="1098" y="293" width="122" height="114" rx="13" class="card"/>
+  <text x="1159" y="326" text-anchor="middle" font-size="15" font-weight="600">ZECTRIX</text>
+  <text x="1159" y="354" text-anchor="middle" font-size="23" font-weight="700">SDK</text>
+  <text x="1159" y="380" text-anchor="middle" class="small">局域网推送</text>
+  <path d="M1220 350 H1264" class="wire" marker-end="url(#arrow)"/>
+
+  <!-- Minimal e-ink display silhouette. -->
+  <rect x="1264" y="282" width="134" height="137" rx="12" fill="#263449" stroke="#96a9c3" stroke-width="2"/>
+  <rect x="1274" y="292" width="114" height="103" rx="4" fill="#eef0e9" stroke="#d9ded4"/>
+  <text x="1287" y="321" font-size="13" font-weight="700" style="fill:#253248">InkHub</text>
+  <path d="M1288 336 H1372 M1288 347 H1355 M1288 358 H1364" stroke="#929b90" stroke-width="3" stroke-linecap="round"/>
+  <rect x="1287" y="372" width="36" height="8" rx="2" fill="#c7cec1"/>
+  <circle cx="1331" cy="406" r="3" fill="#98ac9c"/>
+  <text x="1331" y="447" text-anchor="middle" class="label">NOTE4</text>
+  <text x="1331" y="471" text-anchor="middle" class="detail">墨水屏</text>
+
+  <text x="38" y="592" class="small">通道名称、优先级与队列为示意；每个通道的显示规则均可独立配置。</text>
+  <text x="1400" y="592" text-anchor="end" class="small">多来源 → 多通道 → 有序显示</text>
+</svg>

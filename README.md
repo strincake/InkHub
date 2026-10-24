@@ -14,10 +14,15 @@
 - 特别紧急的时候把一段文字临时 Pin 在屏幕上，把文字删掉后，又自动回到在 Codex 任务和天气之间切换的状态。
 
 
-<img src="docs/images/实时显示队列特写.png" alt="实时内容队列" width="420">
+<p>
+  <img src="docs/images/实时显示队列特写.png" alt="实时内容队列" width="320">
+</p>
+
 *实时内容队列展示*
 
 ## 它做了什么
+
+![墨枢 InkHub 工作流程：多来源接入、通道与独立规则、动态显示队列，经 SDK 推送至 NOTE4 墨水屏](docs/images/inkhub-flow.svg)
 
 允许用户通过多种方式把自己的原有 ZECTRIX NOTE4 插件接入墨枢统一管理，为每个来源设置不同的优先级，并可以定义每个源是临时任务还是需要常显的任务，从而组出自己想要的任务队列。例如，可以让高优先级任务能够打断低优先级任务显示，当高优先级任务结束之后，还可以回落到低优先级任务。
 
@@ -27,7 +32,7 @@
 简而言之，InkHub 集成了 [zectrix-local-push-sdk](https://github.com/itopinion/zectrix-local-push-sdk)：用户将其他的如天气插件、任务插件的推送路径指向 InkHub，由 InkHub 进行统一管理，以及推送到真机。
 
 ![插件中心](docs/images/插件页面.png)
-*内置插件设置页*
+*插件管理页*
 
 其中，用户可以通过三种方式接入 InkHub：
 
@@ -36,6 +41,7 @@
 3. **编写 InkHub 插件**：对于尚未集成 [该 SDK](https://github.com/itopinion/zectrix-local-push-sdk)、尚处于概念状态的想法，您可以考虑编写一个符合 InkHub 规范的轻量 Python 插件直接接入 InkHub，该方式可以额外获得：注册多个内容通道的能力；将设置页集成进入InkHub便于统一操作的能力。
 
 ![插件设置页](docs/images/插件设置页.png)
+*插件内嵌设置页*
 
 项目目前内置了三个插件，你可以按需启用和卸载：
 
@@ -56,7 +62,8 @@
 
 - 补充基于时间段的多通道配置组管理。
 
----
+
+# 详细功能与构建介绍
 
 ## 主要功能
 
