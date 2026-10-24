@@ -1,34 +1,63 @@
 # 墨枢 InkHub
-墨枢是基于ZECTRIX NOTE4 设备局域网推送功能开发的一款多来源管理与调度工具。
+
+墨枢（InkHub）是基于 ZECTRIX NOTE4 设备局域网推送功能开发的一款多来源管理与调度工具。
+
+![墨枢主界面（亮色模式）](docs/images/主页面亮色.png)
+![墨枢主界面（暗色模式）](docs/images/主页面暗色.png)
+
 
 ## 它是为了解决什么
-想要充分利用这块墨水屏设备，比如在有codex任务的情况下展示codex任务，在任务停止之后返回到展示今日天气，在特别紧急的时候一段文字临时Pin在屏幕上，把文字删掉后，它又会自动回到在codex任务和天气之间切换的状态。
+
+想要充分利用这块墨水屏设备，比如：
+
+- 有 Codex 任务的情况下展示 Codex 任务，任务停止之后返回到展示今日天气；
+- 特别紧急的时候把一段文字临时 Pin 在屏幕上，把文字删掉后，又自动回到在 Codex 任务和天气之间切换的状态。
+
+
+<img src="docs/images/实时显示队列特写.png" alt="实时内容队列" width="420">
+*实时内容队列展示*
 
 ## 它做了什么
-允许用户通过多种方式把自己的原有ZECTRIX NOTE4 插件接入墨枢统一管理，为每个来源设置不同的优先级，并可以定义每个源是临时任务还是需要常显的任务，从而组出自己想要的任务队列。例如，可以让高优先级任务能够打断低优先级任务显示，当高优先级任务结束之后，还可以回落到低优先级任务。
 
-简而言之，InkHub集成了https://github.com/itopinion/zectrix-local-push-sdk，用户将其他的如天气插件、任务插件的推送路径指向InkHub，InkHub会进行统一管理，以及推送到真机。
+允许用户通过多种方式把自己的原有 ZECTRIX NOTE4 插件接入墨枢统一管理，为每个来源设置不同的优先级，并可以定义每个源是临时任务还是需要常显的任务，从而组出自己想要的任务队列。例如，可以让高优先级任务能够打断低优先级任务显示，当高优先级任务结束之后，还可以回落到低优先级任务。
 
-其中，用户可以通过三种方式接入InkHub
-1. 使用https://github.com/itopinion/zectrix-local-push-sdk接入 ：对于已经集成https://github.com/itopinion/zectrix-local-push-sdk的项目，将ip和端口指向InkHub，这种方式对于已有项目几乎不完全不需要进行代码修改。
-2. 集成本项目中的HTTP推送SDK：对于已经集成https://github.com/itopinion/zectrix-local-push-sdk的项目，也仅需进行少量修改即可额外集成。
-3. 为InkHub编写符合规范的插件，对于尚未集成https://github.com/itopinion/zectrix-local-push-sdk的尚处于概念状态的想法，您可以考虑编写一个符合InkHub的轻量python插件，直接接入InkHub，该方式可以额外获得注册多个内容通道的能力。
+![内容通道设置页](docs/images/内容通道.png)
+*内容通道设置页*
 
-项目目前内置了三个插件，你可以进行按需启用和卸载：
-1. Codex 工作搭子：https://github.com/itopinion/zectrix-agent-pet 的InkHub插件重写版本，仅复刻功能，未使用原有代码。
-2. 本地文件夹相册轮播：支持选取多个文件夹，并将每个文件夹作为单独通道管理。
-3. 桌面便签与时钟：一个简易的示例便签程序。
+简而言之，InkHub 集成了 [zectrix-local-push-sdk](https://github.com/itopinion/zectrix-local-push-sdk)：用户将其他的如天气插件、任务插件的推送路径指向 InkHub，由 InkHub 进行统一管理，以及推送到真机。
+
+![插件中心](docs/images/插件页面.png)
+*内置插件设置页*
+
+其中，用户可以通过三种方式接入 InkHub：
+
+1. **原 SDK 直连**：使用 [zectrix-local-push-sdk](https://github.com/itopinion/zectrix-local-push-sdk) 接入。对于已经集成 [该 SDK](https://github.com/itopinion/zectrix-local-push-sdk) 的项目，把 IP 和端口指向 InkHub 即可，这种方式对于已有项目几乎完全不需要进行代码修改。
+2. **集成 HTTP 推送 SDK**：集成本项目自带的 HTTP 推送 SDK。对于已经集成 [该 SDK](https://github.com/itopinion/zectrix-local-push-sdk) 的项目，也仅需进行少量修改即可额外集成。
+3. **编写 InkHub 插件**：对于尚未集成 [该 SDK](https://github.com/itopinion/zectrix-local-push-sdk)、尚处于概念状态的想法，您可以考虑编写一个符合 InkHub 规范的轻量 Python 插件直接接入 InkHub，该方式可以额外获得：注册多个内容通道的能力；将设置页集成进入InkHub便于统一操作的能力。
+
+![插件设置页](docs/images/插件设置页.png)
+
+项目目前内置了三个插件，你可以按需启用和卸载：
+
+1. **Codex 工作搭子**：[zectrix-agent-pet](https://github.com/itopinion/zectrix-agent-pet) 的 InkHub 插件重写版本，仅复刻功能，未使用原有代码。
+2. **本地文件夹相册轮播**：支持选取多个文件夹，并将每个文件夹作为单独通道管理。
+3. **桌面便签与时钟**：一个简易的示例便签程序。
 
 ## 怎么使用
-该项目目前仅编译了windows端，你可以通过https://github.com/strincake/screen-scheduler/releases 进行下载，程序运行后会在托盘驻留，并使用浏览器网页作为前端展示。
+
+该项目目前仅编译了 Windows 端，你可以通过 [GitHub Releases](https://github.com/strincake/screen-scheduler/releases) 进行下载；程序运行后会在托盘驻留，并使用浏览器网页作为前端展示。
 
 ## 当前局限
-部分功能如原生SDK接入、HTTP SDK接入和声音透传，未经过充分的真机测试，可能存在一定问题。
-由于目前功能较为庞杂，有任何想法和问题，欢迎提issues。
+
+- 部分功能如原生 SDK 接入、HTTP SDK 接入和声音透传，未经过充分的真机测试，可能存在一定问题。
+- 由于目前功能较为庞杂，有任何想法和问题，欢迎提 issues。
 
 ## 后续规划
-补充基于时间段的多通道配置组管理。 
+
+- 补充基于时间段的多通道配置组管理。
+
 ---
+
 ## 主要功能
 
 - **屏幕调度**：为每个通道来源可以设置：五级优先级、最低展示时间、任务有效期、临时优先、长期来源空闲回落，以及展示实时调度队列。
@@ -87,7 +116,7 @@ Pillow 版本固定为本次整理时使用的版本；Rust 的依赖版本由�
 
 正式优化构建使用 `./build.ps1 -Release`，随后运行 `./start.ps1 -Release`。脚本将构建产物统一放在本项目的 `target/` 下。Release 构建会自动将三个内置插件打包并嵌入 EXE；首次启动自动安装缺失的内置插件，全部默认禁用，不执行插件代码。已有同 ID 插件不会覆盖，后续禁用或卸载也不会被重启撤销。开发构建保持原有的手动安装方式。
 
-打开管理界面：<http://127.0.0.1:38476>。网页关闭后服务仍会运行；在侧栏点击“退出墨枢”才能正常释放设备并结束服务。已有旧实例时，请先从旧网页退出，再启动本目录中的实例。
+打开管理界面：[127.0.0.1:38476](http://127.0.0.1:38476)。网页关闭后服务仍会运行；在侧栏点击“退出墨枢”才能正常释放设备并结束服务。已有旧实例时，请先从旧网页退出，再启动本目录中的实例。
 
 需要直接运行或指定其他数据位置时：
 
