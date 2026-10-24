@@ -1,0 +1,127 @@
+{
+  "upstream": "https://github.com/itopinion/zectrix-local-push-sdk.git",
+  "base_commit": "c71412f3f1e1d039bf4f09b9e7867c4661ae1237",
+  "kind": "local source snapshot",
+  "local_changes": [
+    "tests/lan.rs: Windows UDP mock ignores WSAECONNRESET (10054) after a closed test client.",
+    "Packaging: README snapshot notes added; SDK_MANIFEST.json, SHA256SUMS and VALIDATION.json regenerated for this copy."
+  ],
+  "files": [
+    {
+      "path": "Cargo.lock",
+      "sha256": "3f692704bfc4d295f7a681ceb4cd7972e6619eb02a5f73cdf4aa3a128e4f13c0"
+    },
+    {
+      "path": "Cargo.toml",
+      "sha256": "8c5517d5418a795a6c8623b622b5892fc76333e41a02b6c78280a8ac1d619619"
+    },
+    {
+      "path": "compatibility.json",
+      "sha256": "8618bc9f5bccf467ea2b536a4a9062a9410135a47e567c84c4d4f23fdd89653c"
+    },
+    {
+      "path": "docs/API.en.md",
+      "sha256": "ea3bb4b8b321647ad4583a098112f9362714e39dcab5b90ee4f4786ff34dbc29"
+    },
+    {
+      "path": "docs/API.md",
+      "sha256": "42723cb96fabefa3cbd6da3df12bf10b1a12fb76dee1b3e4c9ad04dffec417c6"
+    },
+    {
+      "path": "docs/FIRMWARE.en.md",
+      "sha256": "179eded6e579533415e87060047195a35f572bb2bdc67683aa2eb2fd644a060d"
+    },
+    {
+      "path": "docs/FIRMWARE.md",
+      "sha256": "fce7e70980fdfccfd9ff270e1850aa67f4017c27806a9eb8d5f07c7ddd6f486d"
+    },
+    {
+      "path": "docs/zectrix-lan-v1.html",
+      "sha256": "1bc33886caac8dbd1428e09dbc30095a96bb868a744c3f064ddf7db3e6858e00"
+    },
+    {
+      "path": "examples/keys.rs",
+      "sha256": "b96b792f1e06407a5cdac930af0af2c5ec65056194d811e8f84db4ed4e88b891"
+    },
+    {
+      "path": "examples/play.rs",
+      "sha256": "f32429eff4f76e60e9c0fd2647a5e2cc5fe191df343fafe01eec75f2cc66ada1"
+    },
+    {
+      "path": "examples/recorder.rs",
+      "sha256": "ebd2ce3b909b2930fc87999b92ca4ee167f3fabc3a52f9db24e379bec3980f20"
+    },
+    {
+      "path": "examples/show.rs",
+      "sha256": "320ebb21c57990829d010acc329ef72f472ff093915c93c8c68e8d088afad9fa"
+    },
+    {
+      "path": "examples/status.rs",
+      "sha256": "96288e9c4d5af7978fc801672f7a591ac73ceeb2c7ddd3816594483ef8c6b844"
+    },
+    {
+      "path": "LICENSE",
+      "sha256": "0a5a839033bfe18fe75d32b50d9d028912cf876f69ef59c2791aeb2971335d05"
+    },
+    {
+      "path": "LICENSES/Opus-COPYING.txt",
+      "sha256": "8338ce8d922bb4416ce3dd1e5680173332435e3f0755007ac7801ccd674fe682"
+    },
+    {
+      "path": "README.en.md",
+      "sha256": "f9e098c89702cfc74bec9127f3fadc3f4486275a06e01f2d3b3c62b1ceff508a"
+    },
+    {
+      "path": "README.md",
+      "sha256": "941f008a44fecf78ea5da5510ea08afe19d35ce32e0c0aa37319bd9ba5f61a8e"
+    },
+    {
+      "path": "rust-toolchain.toml",
+      "sha256": "7458b2d74495e6fb1c1edeea4d5a793705476431dadb60627187111f91441e13"
+    },
+    {
+      "path": "scripts/verify.py",
+      "sha256": "dcb70a48346f009f856228747fcc0f48da554ddd9cb63ed086921bc07123574c"
+    },
+    {
+      "path": "SDK_MANIFEST.json",
+      "sha256": "ca4c057d8b2ee769bc92b6c9434f929842d1947f4642edc51c8142e592b9dcb8"
+    },
+    {
+      "path": "SHA256SUMS",
+      "sha256": "b859dae08049cf313b7cb69aee144334e1ef491110f1419283e42bf5a8d1a13d"
+    },
+    {
+      "path": "src/audio.rs",
+      "sha256": "28b3505ec444affdea0c8df583bc9bbc054a59e5418658cc58e1d5ef99742e41"
+    },
+    {
+      "path": "src/device.rs",
+      "sha256": "1a9039c472471ff9aac8d1115fe8faa1cc7c06e2ebeb742bb8e87130b3059b00"
+    },
+    {
+      "path": "src/discovery.rs",
+      "sha256": "bf4eb736837e964dbdd66b607902e7753ae6b3eccacd95a2fe17e5d2e8ed931c"
+    },
+    {
+      "path": "src/image.rs",
+      "sha256": "0b3ba6b89e1e0cc5ba1b8af1002033826785fcfa17b7d8b784e2e4de98ae58a0"
+    },
+    {
+      "path": "src/lib.rs",
+      "sha256": "24fc8f41f6a5f0e0535a5671212acb29c6d7e1ada19ca957aa877bec6e0972c0"
+    },
+    {
+      "path": "src/protocol.rs",
+      "sha256": "9762ad63e08370b0a129f5cd6ba9c6a230eeb7e4c218a460766d9b91c8a3d4bf"
+    },
+    {
+      "path": "tests/lan.rs",
+      "sha256": "f65dccf209aa3c07fc096eba6c069a4937d8186245eef34b6db2564bbb1facfb"
+    },
+    {
+      "path": "VALIDATION.json",
+      "sha256": "854fbc8d0d2c2413f26ab3847fb343094050b715846b137ba925ac265a9c1d21"
+    }
+  ]
+}

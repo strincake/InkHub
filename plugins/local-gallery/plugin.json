@@ -1,0 +1,45 @@
+{
+  "api_version": 1,
+  "id": "local-gallery",
+  "name": "本地文件夹相册",
+  "version": "2.0.0",
+  "description": "一个插件管理多个相册来源；每个来源独立注册通道，设置文件夹、铺满方式和轮播规则。",
+  "entry": "main.py",
+  "source_defaults": {
+    "persistent": true,
+    "hold_ms": 0,
+    "ttl_ms": 0
+  },
+  "triggers": {
+    "startup": true,
+    "displayed": true,
+    "keys": true,
+    "actions": [
+      {
+        "id": "previous",
+        "label": "上一张"
+      },
+      {
+        "id": "next",
+        "label": "下一张"
+      },
+      {
+        "id": "rescan",
+        "label": "重新扫描"
+      }
+    ],
+    "interval_seconds": 1
+  },
+  "settings": [
+    {
+      "key": "sources",
+      "label": "相册来源",
+      "type": "json",
+      "default": [],
+      "host_ui": false
+    }
+  ],
+  "homepage": "home.html",
+  "navigation_title": "本地相册",
+  "multi_channel": true
+}

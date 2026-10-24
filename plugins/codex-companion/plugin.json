@@ -1,0 +1,46 @@
+{
+  "api_version": 1,
+  "id": "codex-companion",
+  "name": "Codex 工作搭子",
+  "version": "1.0.0",
+  "description": "本机 Codex 任务跟随、像素宠物、四任务分页和设备提示音。按真实元数据判断工作、待确认、完成与停止；不保存问题、答案或工具参数。设备由墨枢统一管理。",
+  "entry": "main.py",
+  "homepage": "home.html",
+  "navigation_title": "Codex 工作搭子",
+  "triggers": {
+    "startup": true,
+    "interval_seconds": 3,
+    "keys": true,
+    "displayed": true,
+    "actions": [
+      {"id": "previous", "label": "上一项 / 页"},
+      {"id": "next", "label": "下一项 / 页"},
+      {"id": "auto-follow", "label": "自动跟随"},
+      {"id": "demo-working", "label": "演示：工作"},
+      {"id": "demo-waiting", "label": "演示：等待"},
+      {"id": "demo-done", "label": "演示：完成"},
+      {"id": "demo-error", "label": "演示：出错"},
+      {"id": "real-tasks", "label": "返回实时任务"},
+      {"id": "sound-waiting", "label": "试听等待提示音"},
+      {"id": "sound-done", "label": "试听完成提示音"}
+    ]
+  },
+  "source_defaults": {
+    "priority": 3,
+    "min_ms": 2500,
+    "hold_ms": 30000,
+    "ttl_ms": 0,
+    "persistent": true,
+    "format": "mono",
+    "fit": "contain"
+  },
+  "settings": [
+    {"key": "codex_enabled", "label": "跟随本机 Codex", "type": "boolean", "default": true, "host_ui": false},
+    {"key": "animation", "label": "工作时的慢速动画", "type": "boolean", "default": true, "host_ui": false},
+    {"key": "sound_enabled", "label": "设备状态提示音", "type": "boolean", "default": false, "host_ui": false},
+    {"key": "volume", "label": "提示音音量", "type": "number", "min": 0, "max": 100, "default": 90, "host_ui": false},
+    {"key": "stale_minutes", "label": "多久没更新，标记为待确认（分钟）", "type": "number", "min": 1, "max": 1440, "default": 15, "host_ui": false},
+    {"key": "sessions_path", "label": "Codex 会话目录（留空自动定位）", "type": "text", "default": "", "host_ui": false},
+    {"key": "poll_seconds", "label": "检查本机任务的间隔（秒）", "type": "number", "min": 3, "max": 60, "default": 3, "host_ui": false}
+  ]
+}

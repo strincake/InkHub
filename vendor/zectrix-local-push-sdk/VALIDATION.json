@@ -1,0 +1,10 @@
+{
+  "platform": "windows-x86_64-msvc",
+  "context": "InkHub vendored source snapshot; freshly tested in the independent project",
+  "command": "cargo test --offline --locked --manifest-path vendor/zectrix-local-push-sdk/Cargo.toml",
+  "unit_tests_passed": 16,
+  "udp_integration_tests_passed": 10,
+  "physical_device_tested": false,
+  "firmware_modified": false,
+  "environment_note": "Existing local Rust/MSVC/CMake toolchain and offline crate cache used. First build on another machine needs prerequisites and dependencies."
+}

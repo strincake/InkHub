@@ -1,0 +1,43 @@
+# Rust / JavaScript / Python build and dependency caches
+target/
+node_modules/
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# Local settings, installed plugin packages, state, credentials and backups
+/settings.json
+/settings.json.*
+/settings.plugins/
+/data/
+*.plugins/
+.env
+.env.*
+!.env.example
+*.bak
+*.log
+
+# Generated plugin ZIPs, screenshots, reports and temporary test profiles
+/dist/
+/artifacts/
+/outputs/
+*.screen-plugin.zip
+/*-result.json
+/*-verification.json
+/tests/*-verification.json
+/*-browser-*/
+/browser-check-*/
+/*-integration-*/
+/integration-*/
+/*-test-*/
+/host-races-*/
+/tmp*/
+
+# Editor and OS files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+Desktop.ini
