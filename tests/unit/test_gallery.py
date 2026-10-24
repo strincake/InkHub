@@ -1,4 +1,5 @@
-import importlib.util,tempfile,unittest
+import importlib.util,tempfile,unittest,io
+from unittest.mock import patch
 from pathlib import Path
 from PIL import Image,ImageFont
 ROOT=Path(__file__).resolve().parents[2]
@@ -37,6 +38,23 @@ class Tests(unittest.TestCase):
         self.event({'type':'startup'});self.assertEqual(self.ctx.shown.getpixel((0,0)),(255,255,255));self.ctx.settings['fit']='cover';self.ctx.display.update(format='gray16');self.event({'type':'manual','action':'refresh'});self.assertNotEqual(self.ctx.shown.getpixel((0,0)),(255,255,255));self.assertEqual(self.ctx.format,'gray16')
     def test_corrupt_picture_is_skipped(self):
         (self.folder/'-bad.png').write_bytes(b'broken');self.event({'type':'startup'});self.assertNotEqual(self.ctx.state['current'],'-bad.png');self.assertIsNotNone(self.ctx.shown)
+    def test_corrupt_picture_with_non_utf8_log_output(self):
+        (self.folder/'-坏图.png').write_bytes(b'broken')
+        buffer=io.BytesIO()
+        stream=io.TextIOWrapper(buffer,encoding='cp1252',errors='strict')
+        with patch('sys.stdout',stream),patch.object(self.ctx,'show',wraps=self.ctx.show) as show:
+            self.event({'type':'startup'})
+            self.assertEqual(show.call_count,1)
+        stream.flush()
+        self.assertIn('-坏图.png'.encode('cp1252','backslashreplace').decode('cp1252'),buffer.getvalue().decode('cp1252'))
+        self.assertNotEqual(self.ctx.state['current'],'-坏图.png')
+        self.assertIsNotNone(self.ctx.shown)
+    def test_all_corrupt_pictures_still_report_failure(self):
+        for file in self.folder.iterdir():file.unlink()
+        (self.folder/'broken.png').write_bytes(b'broken')
+        with self.assertRaisesRegex(ValueError,'所有图片均无法读取'):
+            self.event({'type':'startup'})
+        self.assertIsNone(self.ctx.shown)
     def test_rescan_after_removal(self):
         self.event({'type':'startup'});(self.folder/self.ctx.state['current']).unlink();self.event({'type':'manual','action':'rescan'});self.assertTrue((self.folder/self.ctx.state['current']).exists())
 if __name__=='__main__':unittest.main()

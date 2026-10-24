@@ -12,6 +12,9 @@ on:
         default: ''
   push:
     tags: ['v*']
+env:
+  PYTHONUTF8: '1'
+  PYTHONIOENCODING: utf-8
 permissions:
   contents: read
 jobs:
@@ -81,4 +84,8 @@ jobs:
           tag="$INPUT_TAG"
           if [ "$GITHUB_REF_TYPE" = tag ]; then tag="$GITHUB_REF_NAME"; fi
           test "$tag" = "v$version"
+          if gh release view "$tag" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "Release $tag already exists; preserving its notes and assets."
+            exit 0
+          fi
           gh release create "$tag" release-assets/* --verify-tag --draft --title "InkHub $version" --generate-notes

@@ -1,8 +1,14 @@
 """All folder scanning, selection and slideshow timing live in this portable plugin."""
-import hashlib,json,random
+import hashlib,json,random,sys
 from pathlib import Path
 from PIL import Image,ImageOps
 EXTENSIONS={'.png','.jpg','.jpeg','.webp','.bmp','.gif','.tif','.tiff'}
+
+def _log_skipped(errors):
+    message='已跳过损坏图片：'+', '.join(errors[:5])
+    encoding=getattr(sys.stdout,'encoding',None)
+    if encoding:message=message.encode(encoding,errors='backslashreplace').decode(encoding)
+    print(message)
 
 def _scan(ctx):
     folder=Path(ctx.settings['folder']).expanduser()
@@ -69,9 +75,11 @@ def _handle_single(ctx,event):
                     image=ImageOps.contain(image,(400,300),Image.Resampling.LANCZOS);canvas=Image.new('RGB',(400,300),'white');canvas.paste(image,((400-image.width)//2,(300-image.height)//2));image=canvas
             ctx.state['current']=file.name
             ctx.show(image,ctx.display.get('format','mono'))
-            if errors:print('已跳过损坏图片：'+', '.join(errors[:5]))
-            return
-        except (OSError,ValueError) as error:errors.append(file.name)
+        except (OSError,ValueError):
+            errors.append(file.name)
+            continue
+        if errors:_log_skipped(errors)
+        return
     raise ValueError('所有图片均无法读取，请检查文件后重新扫描')
 
 
