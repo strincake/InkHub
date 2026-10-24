@@ -15,3 +15,5 @@
 *.zip binary
 # Preserve vendored snapshot bytes so its SHA-256 inventory survives a clone.
 vendor/zectrix-local-push-sdk/** -text
+
+*.ico binary

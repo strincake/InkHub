@@ -19,6 +19,10 @@ const transportName={sdk:'原版 SDK · 托管接入',http:'HTTP 来源',test:'�
 async function refresh(){if(refreshing)return;refreshing=true;try{const r=await fetch('/control/state');if(!r.ok)throw Error('无法读取调度状态');state=await r.json();token=state.token;render()}catch(e){$('#connection').textContent='管理服务未连接';}finally{refreshing=false}}
 let lastScreen='', lastCards='';
 function render(){
+  const app=state.application??{};
+  const auto=$('#autostart-enabled');auto.disabled=!app.autostart_supported;$('#save-application').disabled=!app.autostart_supported;
+  if(document.activeElement!==auto)auto.checked=app.autostart??false;
+  $('#autostart-hint').textContent=app.autostart_supported?'登录 Windows 后驻留托盘，不自动弹出网页。':'安装版可设置随 Windows 启动。';
   pluginUI.render(state);
   document.body.dataset.view=selectedView;
   const dev=state.device,current=source(state.current?.frame.id);
@@ -83,3 +87,5 @@ document.querySelectorAll('[data-key]').forEach(b=>b.onclick=action(async()=>com
 await refresh();setInterval(refresh,1000);
 
 $('#save-reconnect').onclick=action(async()=>{await command('reconnect_settings','',{enabled:$('#reconnect-enabled').checked,window_seconds:+$('#reconnect-window').value,interval_seconds:+$('#reconnect-interval').value});toast('重连设置已保存')});
+
+$('#save-application').onclick=action(async()=>{await command('application_settings','',{autostart:$('#autostart-enabled').checked});toast('软件设置已保存')});

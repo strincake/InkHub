@@ -11,6 +11,8 @@
 | [Codex 工作搭子](../plugins/codex-companion/README.md) | 使用、任务状态、文件上报和提示音 |
 | [本地相册](../plugins/local-gallery/README.md) | 多来源相册配置和轮播 |
 | [依赖管理](development/dependencies.md) | 固定 SDK 快照、客户端和依赖更新方法 |
+| [Windows 完整包验收](development/windows-release-verification.md) | 构建、安装、托盘、自启与测试边界 |
+| [Windows 安装与发布](development/windows-release-plan.md) | 安装器、托盘、自启、离线运行环境及 CI/草稿 Release |
 | [测试说明](development/testing.md) | 测试分层、依赖、执行顺序和产物 |
 | [测试目录](../tests/README.md) | 单元、集成、浏览器、手动检查和模拟器的职责 |
 | [数据与版本管理边界](development/data-boundaries.md) | 应提交的源码与应排除的本机数据 |

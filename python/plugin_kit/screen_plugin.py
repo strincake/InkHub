@@ -1,7 +1,7 @@
 """Plugin author API. Plugin code is trusted local Python, not sandboxed."""
 from pathlib import Path
 from PIL import Image,ImageDraw,ImageFont
-import json,urllib.request,io,wave
+import json,urllib.request,io,wave,os
 
 class Context:
     def __init__(self,request,package_dir,data_dir,output):
@@ -26,8 +26,8 @@ class Context:
     def canvas(self,color='white'):
         return Image.new('RGB',(400,300),color)
     def font(self,size=24):
-        for path in ('C:/Windows/Fonts/msyh.ttc','C:/Windows/Fonts/segoeui.ttf','/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf'):
-            if Path(path).exists():return ImageFont.truetype(path,size)
+        for path in (os.environ.get('INKHUB_FONT',''),'C:/Windows/Fonts/msyh.ttc','C:/Windows/Fonts/segoeui.ttf','/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf'):
+            if path and Path(path).is_file():return ImageFont.truetype(path,size)
         return ImageFont.load_default()
     def show(self,image,format='mono'):
         if format not in ('mono','gray4','gray16'):raise ValueError('format 应为 mono / gray4 / gray16')

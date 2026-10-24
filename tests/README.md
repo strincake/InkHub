@@ -6,7 +6,7 @@
 | --- | --- |
 | `lan.rs` | 由 Cargo 自动发现的宿主 Rust 协议测试 |
 | `unit/` | 全部 Python 单元测试 |
-| `integration/` | 使用宿主、客户端和本机模拟器的八组集成检查 |
+| `integration/` | 调度/接入回归、Release 内置插件、完整运行包与安装器验证 |
 | `browser/` | 使用 Playwright 的界面检查 |
 | `support/` | 测试专用 NOTE4 回环协议模拟器，不包含旧应用 |
 | `archive/` | 已失效的旧界面测试，仅保留历史参考，不纳入现行检查 |

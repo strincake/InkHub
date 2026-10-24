@@ -2,6 +2,7 @@
 import io,json,os,socket,subprocess,tempfile,time,zipfile
 from pathlib import Path
 from urllib.request import Request,build_opener,ProxyHandler
+from urllib.error import HTTPError
 from PIL import Image
 from integration import wait
 ROOT=Path(__file__).resolve().parents[2]
@@ -33,7 +34,9 @@ def main():
    if body is not None:
     if not isinstance(body,bytes):body=json.dumps(body).encode();headers['Content-Type']='application/json'
     headers['x-control-token']=token
-   with opener.open(Request(base+path,data=body,headers=headers),timeout=15) as r:return json.loads(r.read())
+   try:
+    with opener.open(Request(base+path,data=body,headers=headers),timeout=15) as r:return json.loads(r.read())
+   except HTTPError as error:raise AssertionError((path,error.code,error.read().decode("utf-8","replace"))) from error
   state=lambda:call('/control/state')
   plugin=lambda name:next(p for p in state()['plugins'] if p['id']==name)
   control=lambda name,op,data={}:call('/control/plugins/'+name,{'op':op,'data':data})

@@ -182,7 +182,7 @@ impl Plugin {
     }
 }
 fn script(name: &str) -> PathBuf {
-    PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("python").join(name)
+    crate::runtime::layout().script(name)
 }
 pub(super) async fn python(
     args: Vec<String>,
@@ -190,7 +190,9 @@ pub(super) async fn python(
     limit: usize,
     seconds: u64,
 ) -> Result<Vec<u8>, String> {
-    let mut child = tokio::process::Command::new("python")
+    let mut command = tokio::process::Command::new(crate::runtime::layout().python());
+    #[cfg(windows)] command.creation_flags(0x08000000);
+    let mut child = command
         .args(args)
         .env_clear()
         .envs(std::env::vars_os().filter(|(key, _)| {
@@ -210,6 +212,7 @@ pub(super) async fn python(
         }))
         .env("PYTHONIOENCODING", "utf-8")
         .env("PYTHONDONTWRITEBYTECODE", "1")
+        .env("INKHUB_FONT", crate::runtime::layout().root.join("assets/fonts/NotoSansSC.ttf"))
         .stdin(std::process::Stdio::piped())
         .stdout(std::process::Stdio::piped())
         .stderr(std::process::Stdio::piped())

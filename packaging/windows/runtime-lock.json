@@ -1,0 +1,42 @@
+{
+  "schema_version": 1,
+  "platform": "windows-x86_64",
+  "assets": {
+    "python": {
+      "version": "3.14.9",
+      "url": "https://www.python.org/ftp/python/3.14.9/python-3.14.9-embed-amd64.zip",
+      "filename": "python-3.14.9-embed-amd64.zip",
+      "sha256": "3c01d7cfc666f746a6f064f60fb2156ab0ec464d3d738ab796371a46a9bb24a2"
+    },
+    "pillow": {
+      "version": "12.1.1",
+      "url": "https://files.pythonhosted.org/packages/40/72/4c245f7d1044b67affc7f134a09ea619d4895333d35322b775b928180044/pillow-12.1.1-cp314-cp314-win_amd64.whl",
+      "sha256": "50480dcd74fa63b8e78235957d302d98d98d82ccbfac4c7e12108ba9ecbdba15",
+      "filename": "pillow-12.1.1-cp314-cp314-win_amd64.whl"
+    },
+    "font": {
+      "version": "Google Fonts Noto Sans SC",
+      "url": "https://raw.githubusercontent.com/google/fonts/a85815a42757630ce188fdad368c2dfc444d4773/ofl/notosanssc/NotoSansSC%5Bwght%5D.ttf",
+      "filename": "NotoSansSC.ttf",
+      "sha256": "a3041811a78c361b1de50f953c805e0244951c21c5bd412f7232ef0d899af0da"
+    },
+    "font_license": {
+      "url": "https://raw.githubusercontent.com/google/fonts/a85815a42757630ce188fdad368c2dfc444d4773/ofl/notosanssc/OFL.txt",
+      "filename": "NotoSansSC-OFL.txt",
+      "sha256": "1c05c68c34f9708415aada51f17e1b0092d2cea709bf4a94cd38114f9e73d7d9"
+    },
+    "inno": {
+      "version": "6.7.3",
+      "url": "https://github.com/jrsoftware/issrc/releases/download/is-6_7_3/innosetup-6.7.3.exe",
+      "publisher": "Pyrsys B.V.",
+      "filename": "innosetup-6.7.3.exe",
+      "sha256": "9c73c3bae7ed48d44112a0f48e66742c00090bdb5bef71d9d3c056c66e97b732"
+    },
+    "inno_chinese": {
+      "version": "6ef32198ef1f7b7b375cd4b6b90896c2a58eb4c2",
+      "url": "https://raw.githubusercontent.com/jrsoftware/issrc/6ef32198ef1f7b7b375cd4b6b90896c2a58eb4c2/Files/Languages/ChineseSimplified.isl",
+      "filename": "ChineseSimplified.isl",
+      "sha256": "e0b0b350e2245f3c5e65586dfe43d574f6e7f06f2261149aba284954b3fc9a8d"
+    }
+  }
+}

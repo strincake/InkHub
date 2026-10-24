@@ -1,7 +1,7 @@
 //! Legacy settings compatibility only; no runtime image-pool implementation.
 use super::*;
 pub async fn legacy_gallery(config: &std::path::Path) -> Result<(), String> {
-    let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    let root = crate::runtime::layout().root.clone();
     let raw = plugins::python(
         vec![
             root.join("python/migrate_gallery.py").to_string_lossy().into(),

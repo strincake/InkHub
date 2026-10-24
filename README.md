@@ -13,6 +13,16 @@
 - **Codex 工作搭子**：跟随本机任务状态，显示像素角色、任务分页和可选提示音；其他 Agent 可通过本机文件上报状态。
 - **外部程序接入**：HTTP v1 与原 SDK 的 UDP 托管入口，附 Rust / Python HTTP 客户端和示例。
 
+## Windows 安装版
+
+正式发布时通过 GitHub Release 提供安装包（私有仓库需要读取权限）；当前本机生成结果在 `dist/releases/`。安装版自带 Python、Pillow 与中文字体，普通用户无需编译或配置开发环境。
+
+启动后驻留右下角托盘，可查看运行状态、打开管理界面或正常退出。关闭网页后仍继续运行。首次已安装三个插件，全部默认禁用。
+
+“连接与切换 → 软件设置”提供**随 Windows 启动**开关，默认关闭；开启后登录 Windows 时仅驻留托盘，不自动弹出网页。设置与插件数据保存在 `%LOCALAPPDATA%/InkHub/`，升级或卸载时保留。
+
+构建安装包使用 `./scripts/package-windows.ps1`，详见[Windows 安装与发布](docs/development/windows-release-plan.md)。以下环境准备面向源码开发者。
+
 ## 环境准备
 
 当前启动脚本面向 Windows。开发环境需要：
@@ -50,7 +60,7 @@ Pillow 版本固定为本次整理时使用的版本；Rust 的依赖版本由�
 ./start.ps1 -Build
 ```
 
-正式优化构建使用 `./build.ps1 -Release`，随后运行 `./start.ps1 -Release`。脚本将构建产物统一放在本项目的 `target/` 下。
+正式优化构建使用 `./build.ps1 -Release`，随后运行 `./start.ps1 -Release`。脚本将构建产物统一放在本项目的 `target/` 下。Release 构建会自动将三个内置插件打包并嵌入 EXE；首次启动自动安装缺失的内置插件，全部默认禁用，不执行插件代码。已有同 ID 插件不会覆盖，后续禁用或卸载也不会被重启撤销。开发构建保持原有的手动安装方式。
 
 打开管理界面：<http://127.0.0.1:38476>。网页关闭后服务仍会运行；在侧栏点击“退出墨枢”才能正常释放设备并结束服务。已有旧实例时，请先从旧网页退出，再启动本目录中的实例。
 
@@ -60,15 +70,15 @@ Pillow 版本固定为本次整理时使用的版本；Rust 的依赖版本由�
 ./target/debug/note4-screen-scheduler.exe --config ./settings.json
 ```
 
-`--config` 指向设置文件；插件运行目录根据它生成，例如 `settings.json` 对应同目录下的 `settings.plugins/`。源码使用构建时的项目路径定位 Python worker，因此目前请在构建目录中使用；分发单个 EXE 尚不构成完整安装包。
+`--config` 指向设置文件；插件运行目录根据它生成，例如 `settings.json` 对应同目录下的 `settings.plugins/`。源码运行方式仍使用项目目录；安装版从自身目录定位 Python worker 和运行环境。分发时请使用完整安装包或便携 ZIP，不单独复制开发目录中的 EXE。
 
 启动脚本也支持 `-Config`、`-Port`、`-HttpBind` 和 `-SdkBind`，可为独立实例指定数据文件和端口。
 
 ## 第一次使用
 
 1. 启动后先在模拟屏幕中检查队列和画面。
-2. 运行 `./pack-plugins.ps1`，生成三个随附插件的 ZIP。
-3. 在插件中心安装 `dist/plugins/` 中的插件，按需启用；新安装的插件默认不启用。
+2. Release 版本已自动准备三个内置插件，可直接在插件中心按需启用。
+3. 开发构建或需要单独分享插件时，运行 `./pack-plugins.ps1`，再从插件中心安装 `dist/plugins/` 中的 ZIP；手动安装也默认禁用。
 4. 本地相册从左侧插件主页添加文件夹来源；便签与 Codex 工作搭子也通过各自主页操作。
 5. 需要使用实体 NOTE4 时，先退出其他占用设备的程序，在“我的 NOTE4”中填写设备地址并主动连接。
 6. 对每个内容来源设置优先级和显示规则。
@@ -126,9 +136,11 @@ python tests/integration/source-integration.py
 
 更多集成测试、浏览器检查及各自环境要求见[测试说明](docs/development/testing.md)。本机模拟器验证用于确认软件协议行为，不能代替实体设备测试。各轮检查结果见[整理与验证记录](docs/development/repository-preparation.md)。
 
+Windows 安装、用户数据、自启、打包及草稿 Release 流程见[Windows 发布说明](docs/development/windows-release-plan.md)。
+
 ## 当前边界
 
-- 当前没有系统托盘、自启动安装项或完整发布安装包。
+- Windows 完整包提供系统托盘和可选自启；其他平台安装包尚未验证。当前 Windows 安装包未签名。
 - SDK 的 `Busy`、`ResultUnknown` 等失败会暂停发送；用户处理后明确继续，不自动重放未知结果。
 - 提示音由插件提交、宿主统一播放，默认关闭；录音内容不保存或上传。HTTP/UDP 外部来源暂不支持音频。
 - 插件是有本机权限的 Python 代码；网页 iframe 的隔离不能把 Python 插件变成安全沙箱。

@@ -1,3 +1,4 @@
+#![cfg_attr(all(windows, not(debug_assertions)), windows_subsystem = "windows")]
 use axum::{
     body::Bytes,
     extract::{DefaultBodyLimit, Path, State},
@@ -18,8 +19,12 @@ use std::{
 use tokio::sync::{Mutex, Notify};
 use zectrix_sdk::{Device, Event, ImageFormat, OpenOptions};
 mod audio;
+mod builtin_plugins;
 mod ingress;
 mod migration;
+mod runtime;
+#[cfg(windows)]
+mod tray;
 mod plugins;
 
 type ApiResult = Result<Json<Value>, (StatusCode, String)>;
@@ -126,7 +131,7 @@ async fn state(State(a): State<Arc<App>>) -> Json<Value> {
     let now = a.now();
     let sources:Vec<_>=i.scheduler.sources.iter().map(|s|json!({"config":s,"effective":s.effective(now),"reason":i.scheduler.reason(&s.id,now),"keys":i.keys.get(&s.id)})).collect();
     Json(
-        json!({"now":now,"token":a.token,"plugins":plugin_snapshot,"sources":sources,"queue":ingress::queue(&i,now),"access":{"http":a.http_address,"sdk":a.sdk_address,"api_key":a.api_key,"mode":"managed_acceptance"},"external":ingress::summaries(&i),"current":i.scheduler.current,"preempt":i.scheduler.preempt,"paused":i.scheduler.paused,"device":{"mode":i.mode,"target":i.target,"health":i.health,"connected":i.device.is_some(),"blocked":i.blocked,"sending":i.sending,"connecting":i.connecting,"reconnect":i.reconnect,"reconnect_until":i.reconnect_until,"recording":i.recording,"audio":i.audio_status},"logs":i.logs}),
+        json!({"application":{"packaged":runtime::layout().packaged(),"autostart_supported":runtime::autostart_supported(),"autostart":runtime::autostart_enabled()},"now":now,"token":a.token,"plugins":plugin_snapshot,"sources":sources,"queue":ingress::queue(&i,now),"access":{"http":a.http_address,"sdk":a.sdk_address,"api_key":a.api_key,"mode":"managed_acceptance"},"external":ingress::summaries(&i),"current":i.scheduler.current,"preempt":i.scheduler.preempt,"paused":i.scheduler.paused,"device":{"mode":i.mode,"target":i.target,"health":i.health,"connected":i.device.is_some(),"blocked":i.blocked,"sending":i.sending,"connecting":i.connecting,"reconnect":i.reconnect,"reconnect_until":i.reconnect_until,"recording":i.recording,"audio":i.audio_status},"logs":i.logs}),
     )
 }
 async fn screen(State(a): State<Arc<App>>) -> Response {
@@ -200,6 +205,9 @@ async fn command(State(a): State<Arc<App>>, h: HeaderMap, Json(c): Json<Command>
     auth(&a, &h)?;
     let now = a.now();
     match c.op.as_str() {
+        "application_settings" => {
+            runtime::set_autostart(boolean(&c.data, "autostart", false)).map_err(bad)?;
+        }
         "stop" => {
             a.inner.lock().await.scheduler.paused = true;
             a.shutdown.notify_one();
@@ -708,7 +716,15 @@ async fn guard(req: axum::extract::Request, next: axum::middleware::Next) -> Res
     r
 }
 #[tokio::main]
-async fn main() -> Result<(), Box<dyn std::error::Error>> {
+async fn main() {
+    if let Err(error) = run().await { runtime::report_error(&error.to_string()); std::process::exit(1); }
+}
+async fn run() -> Result<(), Box<dyn std::error::Error>> {
+    let requested_port = std::env::args().skip_while(|s|s!="--port").nth(1).unwrap_or("38476".into()).parse::<u16>()?;
+    if runtime::wants_tray() && runtime::existing_instance(requested_port).await {
+        if !runtime::flag("--autostart") { runtime::open_browser(&format!("http://127.0.0.1:{requested_port}")); }
+        return Ok(());
+    }
     let http_address = std::env::args()
         .skip_while(|s| s != "--http-bind")
         .nth(1)
@@ -721,13 +737,16 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let sdk_socket = Arc::new(tokio::net::UdpSocket::bind(&sdk_address).await?);
     let http_address = http_listener.local_addr()?.to_string();
     let sdk_address = sdk_socket.local_addr()?.to_string();
-    let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     let config = std::env::args()
         .skip_while(|s| s != "--config")
         .nth(1)
         .map(PathBuf::from)
-        .unwrap_or(root.join("settings.json"));
+        .unwrap_or_else(||runtime::layout().config());
+    if let Some(parent)=config.parent().filter(|p|!p.as_os_str().is_empty()) { std::fs::create_dir_all(parent)?; }
     migration::legacy_gallery(&config)
+        .await
+        .map_err(std::io::Error::other)?;
+    builtin_plugins::install_once(&config.with_extension("plugins"))
         .await
         .map_err(std::io::Error::other)?;
     let plugin_manager =
@@ -857,11 +876,40 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         "墨枢 http://127.0.0.1:{}",
         listener.local_addr()?.port()
     );
+    let url = format!("http://127.0.0.1:{}", listener.local_addr()?.port());
+    #[cfg(windows)]
+    let _tray = if runtime::wants_tray() {
+        let status=Arc::new(std::sync::Mutex::new(String::from("墨枢 · 启动中")));
+        let (sender,mut receiver)=tokio::sync::mpsc::unbounded_channel();
+        let handle=tray::Tray::start(status.clone(),sender,&runtime::layout().root.join("assets/InkHub.ico")).map_err(std::io::Error::other)?;
+        let tray_app=a.clone();let tray_url=url.clone();
+        tokio::spawn(async move {
+            let mut tick=tokio::time::interval(Duration::from_secs(1));
+            loop { tokio::select! {
+                _=tick.tick()=>{ let inner=tray_app.inner.lock().await; if let Ok(mut value)=status.lock() { *value=format!("墨枢 · {}",inner.health); } },
+                action=receiver.recv()=>match action {
+                    Some(tray::Command::Open)=>runtime::open_browser(&tray_url),
+                    Some(tray::Command::Exit)=>{tray_app.shutdown.notify_one();break},
+                    None=>break,
+                }
+            }}
+        });
+        Some(handle)
+    } else { None };
+    if runtime::wants_browser() { runtime::open_browser(&url); }
     axum::serve(listener, app)
         .with_graceful_shutdown(async move {
             tokio::select! {_=tokio::signal::ctrl_c()=>{},_=a.shutdown.notified()=>{}}
+            {
+                let mut inner=a.inner.lock().await;
+                inner.scheduler.paused=true;
+                inner.reconnect.enabled=false;
+                inner.reconnect_until=None;
+                inner.reconnect_epoch+=1;
+            }
             plugins::shutdown(&a).await;
-            let d = a.inner.lock().await.device.clone();
+            let _operation=a.device_operation.lock().await;
+            let d = { let mut inner=a.inner.lock().await;inner.generation+=1;inner.device.take() };
             if let Some(d) = d {
                 let _ = d.close().await;
             }
