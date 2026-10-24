@@ -37,8 +37,8 @@
 其中，用户可以通过三种方式接入 InkHub：
 
 1. **原 SDK 直连**：使用 [zectrix-local-push-sdk](https://github.com/itopinion/zectrix-local-push-sdk) 接入。对于已经集成 [该 SDK](https://github.com/itopinion/zectrix-local-push-sdk) 的项目，把 IP 和端口指向 InkHub 即可，这种方式对于已有项目几乎完全不需要进行代码修改。
-2. **集成 HTTP 推送 SDK**：集成本项目自带的 HTTP 推送 SDK。对于已经集成 [该 SDK](https://github.com/itopinion/zectrix-local-push-sdk) 的项目，也仅需进行少量修改即可额外集成。
-3. **编写 InkHub 插件**：对于尚未集成 [该 SDK](https://github.com/itopinion/zectrix-local-push-sdk)、尚处于概念状态的想法，您可以考虑编写一个符合 InkHub 规范的轻量 Python 插件直接接入 InkHub，该方式可以额外获得：注册多个内容通道的能力；将设置页集成进入InkHub便于统一操作的能力。
+2. **集成 HTTP 推送 SDK**：集成本项目自带的 HTTP 推送 SDK。对于已经集成 [zectrix-local-push-sdk](https://github.com/itopinion/zectrix-local-push-sdk) 的项目，也仅需进行少量修改即可额外集成。
+3. **编写 InkHub 插件**：对于尚未集成 [zectrix-local-push-sdk](https://github.com/itopinion/zectrix-local-push-sdk)、尚处于概念状态的想法，您可以考虑编写一个符合 InkHub 规范的轻量 Python 插件直接接入 InkHub，该方式可以额外获得：注册多个内容通道的能力；将设置页集成进入InkHub便于统一操作的能力。
 
 ![插件设置页](docs/images/插件设置页.png)
 *插件内嵌设置页*
