@@ -19,6 +19,7 @@ use std::{
 use tokio::sync::{Mutex, Notify};
 use zectrix_sdk::{Device, Event, ImageFormat, OpenOptions};
 mod audio;
+mod diagnostics;
 mod builtin_plugins;
 mod ingress;
 mod migration;
@@ -115,7 +116,12 @@ impl App {
     }
 }
 fn log(i: &mut Inner, now: u64, message: impl Into<String>) {
-    i.logs.insert(0, json!({"at":now,"message":message.into()}));
+    let message = message.into();
+    diagnostics::record(now, &message, &format!(
+        "target={} generation={} sending={} recording={} blocked={} reconnect={}",
+        i.target, i.generation, i.sending, i.recording, i.blocked, i.reconnect.enabled,
+    ));
+    i.logs.insert(0, json!({"at":now,"message":message}));
     i.logs.truncate(80);
 }
 fn auth(a: &App, h: &HeaderMap) -> Result<(), (StatusCode, String)> {
@@ -285,6 +291,7 @@ async fn command(State(a): State<Arc<App>>, h: HeaderMap, Json(c): Json<Command>
             i.recording = false;
             i.scheduler.current = None;
             i.health = "已断开，需手动连接".into();
+            log(&mut i, now, "用户主动断开设备，取消自动重连");
             drop(i);
             if let Some(d) = d {
                 let _ = d.close().await;
@@ -445,6 +452,7 @@ async fn connect(
         i.generation += 1;
         i.media_epoch += 1;
         generation = i.generation;
+        log(&mut i, a.now(), if retry_epoch.is_some() { "开始自动重连" } else { "开始手动连接" });
     }
     let result = Device::open(OpenOptions {
         target: Some(target),
@@ -479,6 +487,7 @@ async fn connect(
         }
         Err(e) => {
             i.health = format!("连接失败：{e}");
+            log(&mut i, a.now(), format!("连接失败：{e}"));
             Err(bad(e))
         }
     }
@@ -494,6 +503,8 @@ async fn events(a: Arc<App>, d: Arc<Device>, generation: u64) {
             Ok(Some(Event::Disconnected { reason })) => {
                 let mut i = a.inner.lock().await;
                 if i.generation == generation {
+                    let message = format!("设备已断开：{reason:?}；sending={} recording={}", i.sending, i.recording);
+                    log(&mut i, a.now(), message);
                     i.reconnect_blocked = i.blocked || i.focus_unknown;
                     i.device = None;
                     i.audio_pending.clear();
@@ -531,10 +542,15 @@ async fn events(a: Arc<App>, d: Arc<Device>, generation: u64) {
                     log(&mut i, a.now(), "录音结束，继续调度");
                 }
             }
-            Ok(None) => break,
+            Ok(None) => {
+                let mut i = a.inner.lock().await;
+                if i.generation == generation { log(&mut i, a.now(), "设备事件流结束（未提供断开原因）"); }
+                break;
+            },
             Err(e) => {
                 let mut i = a.inner.lock().await;
                 if i.generation == generation {
+                    log(&mut i, a.now(), format!("事件连接结束：{e}"));
                     i.reconnect_blocked = i.blocked || i.focus_unknown;
                     i.device = None;
                     i.audio_pending.clear();
@@ -743,6 +759,7 @@ async fn run() -> Result<(), Box<dyn std::error::Error>> {
         .map(PathBuf::from)
         .unwrap_or_else(||runtime::layout().config());
     if let Some(parent)=config.parent().filter(|p|!p.as_os_str().is_empty()) { std::fs::create_dir_all(parent)?; }
+    diagnostics::init(&config)?;
     migration::legacy_gallery(&config)
         .await
         .map_err(std::io::Error::other)?;
@@ -928,6 +945,7 @@ async fn reconnect_loop(a: Arc<App>) {
                 if a.now() >= until {
                     i.reconnect_until = None;
                     i.health = "自动重连时限已结束，可手动连接".into();
+                    log(&mut i, a.now(), "自动重连时限已结束");
                     None
                 } else if i.reconnect.enabled
                     && i.mode == "device"
@@ -957,6 +975,7 @@ async fn reconnect_loop(a: Arc<App>) {
                 i.connecting = false;
                 i.reconnect_until = None;
                 i.health = "自动重连时限已结束，可手动连接".into();
+                log(&mut i, a.now(), "自动重连尝试超时，重连窗口已结束");
             }
             if i.reconnect_until.is_some() {
                 i.reconnect_next = a.now() + i.reconnect.interval_seconds * 1000;

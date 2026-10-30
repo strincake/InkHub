@@ -55,12 +55,13 @@ python tests/integration/builtin-plugins-integration.py
 ```powershell
 npm install --no-save --package-lock=false playwright@1.62.1
 npx playwright install chromium
+node tests/browser/desk-note-browser-check.cjs
 node tests/browser/spatial-browser-check.cjs
 node tests/browser/channels-browser-check.cjs
 node tests/browser/companion-browser-check.cjs
 ```
 
-上述三组检查覆盖当前空间布局、多来源相册与工作搭子。其他现行专项脚本为 `tests/browser/ui-browser-check.cjs`、`tests/browser/queue-controls-browser-check.cjs`、`tests/browser/source-controls-browser-check.cjs`，保留各自功能的详细断言。
+上述四组检查覆盖便签、当前空间布局、多来源相册与工作搭子。便签专项使用宿主消息模拟，检查逐张标题/字号、正文换行、实时预览、保存失败草稿保留、滚动列表和空列表恢复；通用界面专项检查真实宿主的保存桥接。其他现行专项脚本为 `tests/browser/ui-browser-check.cjs`、`tests/browser/queue-controls-browser-check.cjs`、`tests/browser/source-controls-browser-check.cjs`，保留各自功能的详细断言。
 
 `tests/archive/browser-check.cjs` 是旧版添加来源界面与单文件夹相册的历史测试，已由现行六组浏览器检查覆盖相应功能，不作为当前执行入口。
 

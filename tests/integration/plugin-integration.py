@@ -61,7 +61,14 @@ def main():
    assert call('/control/command',{'op':'key','data':{'key':'Down'}})[0]==200
    wait(lambda:next(s['config']['revision'] for s in state()['sources'] if s['config']['id']==source)>old);checks.append('displayed_plugin_receives_key_trigger')
    values=dict(plugin('desk-note')['settings']);values['title']='我的私人便签';values['refresh_seconds']=5
+   values.update(document={'version':2,'notes':[
+    {'id':'first','title':'私人标题','text':'第一行\n\n第二行','show_title':False,'font_size':32},
+    {'id':'second','title':'第二张','text':'第二张正文','show_title':True,'font_size':18}
+   ]},active_note='second')
    cmd('desk-note','settings',values);wait(lambda:settled('desk-note'))
+   assert plugin('desk-note')['state']['current_note']=='second'
+   assert plugin('desk-note')['settings']['document']==values['document']
+   checks.append('structured_notes_multiline_title_font_and_applied_selection')
    bad=dict(values);bad['refresh_seconds']='wrong';assert call('/control/plugins/desk-note',{'op':'settings','data':bad})[0]==400
    checks.append('typed_settings_and_settings_changed_trigger')
    old=plugin('desk-note')['last_run'];wait(lambda:plugin('desk-note')['last_run']>old,seconds=8);checks.append('dynamic_trigger_after_executes_without_external_program')

@@ -1,9 +1,9 @@
 {
   "api_version": 1,
   "id": "desk-note",
-  "name": "桌面便签与时钟",
-  "version": "1.0.0",
-  "description": "一个可修改标题、翻阅便签、定时更新的示例。上下键切换内容，确认键切换明暗。",
+  "name": "便签",
+  "version": "1.1.0",
+  "description": "管理多张便签，实时预览，逐张设置标题与字号。上下键翻阅，确认键切换明暗。",
   "entry": "main.py",
   "triggers": {
     "startup": true,
@@ -16,11 +16,25 @@
       },
       {
         "id": "reset",
-        "label": "重置计数"
+        "label": "回到第一张"
       }
     ]
   },
   "settings": [
+    {
+      "key": "document",
+      "label": "便签列表",
+      "type": "json",
+      "default": {},
+      "host_ui": false
+    },
+    {
+      "key": "active_note",
+      "label": "当前便签",
+      "type": "text",
+      "default": "",
+      "host_ui": false
+    },
     {
       "key": "title",
       "label": "屏幕标题",
@@ -30,7 +44,7 @@
     },
     {
       "key": "notes",
-      "label": "便签内容，每行一条",
+      "label": "旧版便签内容（兼容读取）",
       "type": "textarea",
       "default": "先完成最重要的一件事。\n站起来，喝一杯水。\n这块屏幕，也可以有你的新玩法。",
       "host_ui": false
@@ -57,9 +71,10 @@
       "key": "show_clock",
       "label": "显示电脑本地时间",
       "type": "boolean",
-      "default": true
+      "default": true,
+      "host_ui": false
     }
   ],
   "homepage": "home.html",
-  "navigation_title": "便签工作室"
+  "navigation_title": "便签"
 }

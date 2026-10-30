@@ -4,7 +4,7 @@
 
 | 插件 | 说明 | 主要能力 |
 | --- | --- | --- |
-| `desk-note` | [桌面便签与时钟](desk-note/README.md) | 便签编辑、按键翻阅、时钟、宿主表单与独立主页 |
+| `desk-note` | [便签](desk-note/README.md) | 多便签管理、实时预览、独立标题与字号、按键翻阅 |
 | `local-gallery` | [本地相册](local-gallery/README.md) | 多文件夹来源、裁剪、灰阶、固定或轮播 |
 | `codex-companion` | [Codex 工作搭子](codex-companion/README.md) | 本机任务状态、分页、像素角色和可选提示音 |
 

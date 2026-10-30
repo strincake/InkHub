@@ -1,31 +1,124 @@
-<!doctype html><html lang="zh-CN"><meta charset="utf-8"><title>便签工作室</title><style>body{font:14px/1.7 system-ui;color:#304b3b;margin:0;padding:22px;background:#f2f5ed}h3{margin:0 0 8px}label{display:block;margin:12px 0}input,textarea{display:block;width:95%;padding:9px;border:1px solid #ccd8c4;border-radius:7px;font:inherit}button{background:#355a48;color:white;border:0;border-radius:7px;padding:10px 16px;cursor:pointer}small{color:#7e8d74}#message{margin:10px 0}</style><style data-builtin-ui="spatial">
-:root{--bg:transparent;--paper:#ffffffb8;--solid:#f8faff;--ink:#2b374c;--muted:#6d7e96;--line:#dce3ee;--accent:#5474c6;--on-accent:#fff;--soft:#e8eef9;--stage:#edf2f8;--green:#56856f;color-scheme:light;font:14px/1.7 'Segoe UI','Microsoft YaHei',sans-serif;background:transparent;color:var(--ink)}:root[data-theme=dark]{--paper:#29364bbd;--solid:#263449;--ink:#e3eaf6;--muted:#a3b2ca;--line:#42536d;--accent:#a3baf7;--on-accent:#17263e;--soft:#41577880;--stage:#213044;--green:#9ac6af;color-scheme:dark}*{box-sizing:border-box}body{margin:0;padding:24px;background:transparent;color:var(--ink);font:inherit}main{max-width:1100px;margin:auto}h1{font-size:25px;font-weight:600;letter-spacing:-.5px;margin:0 0 8px}h2,h3{font-size:17px;font-weight:600;margin:0 0 15px}p,small,.sub,.muted{color:var(--muted);line-height:1.8}p{font-size:12px}small{font-size:11px}label{display:block;font-size:12px;margin:18px 0}input:not([type=checkbox]):not([type=range]),textarea,select{display:block;width:100%;min-width:0;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--stage);color:var(--ink);font:12px/1.7 'Segoe UI','Microsoft YaHei',sans-serif;margin-top:7px}textarea{min-height:125px;resize:vertical}input[type=number]{appearance:textfield;-moz-appearance:textfield}input::-webkit-inner-spin-button,input::-webkit-outer-spin-button{appearance:none;margin:0}button{font:12px/1.7 'Segoe UI','Microsoft YaHei',sans-serif;background:var(--soft);color:var(--ink);border:1px solid transparent;padding:9px 16px;border-radius:20px;cursor:pointer}button:hover{filter:brightness(.97);border-color:var(--line)}button.primary,#save,#save-settings{background:var(--accent);color:var(--on-accent)}button:disabled{opacity:.45;cursor:default}button:focus-visible,input:focus-visible,textarea:focus-visible,summary:focus-visible{outline:2px solid #94afe5;outline-offset:3px}input[type=checkbox],input[type=range]{accent-color:var(--accent)}input[type=range]{width:70%;vertical-align:middle}.check{display:flex;align-items:flex-start;gap:10px}.check input{margin-top:5px}.grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:22px}.card,.album{padding:22px;border:1px solid #ffffffbd;border-radius:18px;background:var(--paper);box-shadow:0 5px 20px #61738b04;margin:0 0 20px}.dark .card,[data-theme=dark] .card,[data-theme=dark] .album{border-color:#6c7d9833}.wide{grid-column:1/-1}.row,.actions{display:flex;gap:10px;flex-wrap:wrap;align-items:center}.actions{justify-content:flex-start;margin:22px 0}.album-title{display:flex;align-items:center;justify-content:space-between;gap:15px;margin-bottom:18px}.album-title strong{font-size:17px}.album-title button{color:#ad635e;background:transparent}.album .grid{margin-top:0}.album label{margin:0 0 8px}.album p{font-size:11px}.album [data-action]{margin:4px 4px 0 0}.album [data-remove]{font-size:11px}header{display:flex;align-items:center;justify-content:space-between;gap:20px;margin-bottom:25px}header p{margin-top:8px}#message,#status{color:var(--green);font-size:12px;min-height:22px;margin:14px 0}#health{background:var(--soft);color:var(--ink);font-size:12px;border-radius:12px;padding:14px 16px}#tasks{list-style:none;padding:0;min-height:80px}.task{padding:15px 0;border-bottom:1px solid var(--line)}.task strong{font-size:13px;font-weight:500;overflow-wrap:anywhere}.task small{display:block;font-size:11px;margin-top:5px}.mode{display:inline-block;background:var(--soft);color:var(--green);padding:4px 10px;border-radius:8px;font-size:10px;margin:12px 0}code{display:block;white-space:pre-wrap;overflow-wrap:anywhere;font:12px/1.7 Consolas,monospace;background:var(--stage);color:var(--ink);padding:14px;border-radius:10px}fieldset{border:0;margin:0;padding:0}summary{cursor:pointer;font-size:12px;color:var(--muted);padding:7px 0}details{margin-top:17px}output{font-size:12px;padding-left:10px}.error{color:#b87265}.note-workspace{max-width:1000px;margin:auto}.note-layout{display:grid;grid-template-columns:1fr 280px;gap:24px}.note-head{display:flex;align-items:center;justify-content:space-between;gap:20px;margin-bottom:24px}.note-head p{margin:0}.note-sample{background:#eeedde;border-radius:12px;padding:28px;color:#59624f;min-height:235px}.note-sample p{font-size:10px;color:#8b957c;margin-bottom:27px}.note-sample strong{font-size:23px;font-weight:400;line-height:1.8}.note-copy{font-size:11px;margin-top:16px}[data-theme=dark] .note-sample{background:#333b30;color:#d8ddcd}[data-theme=dark] .note-sample p{color:#a3b096}.select-control{margin-top:7px}.select-trigger{margin:0}input[type=file]::file-selector-button{border:1px solid var(--line);background:var(--solid);color:var(--accent);border-radius:20px;padding:8px 12px;margin-right:10px;font:inherit}
-@media(max-width:700px){body{padding:16px}.grid,.note-layout{grid-template-columns:1fr;gap:16px}.card,.album{padding:18px}.wide{grid-column:auto}h1{font-size:22px}header,.note-head{align-items:flex-start;flex-wrap:wrap}.actions{flex-wrap:wrap}.album-title{align-items:flex-start}.album-title strong{font-size:16px}.album .row{gap:6px}.note-sample{min-height:150px}.select-trigger{min-height:40px}}
-@media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
-
-.select-control{position:relative;display:block;min-width:0;width:100%}.native-select,.field select.native-select{position:absolute!important;opacity:0!important;pointer-events:none!important;width:1px!important;height:1px!important;padding:0!important;margin:0!important;border:0!important;overflow:hidden!important}.select-trigger{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;min-width:0;text-align:left;font:inherit;font-size:12px;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--stage);color:var(--ink);line-height:1.6;cursor:pointer}.select-trigger>span:first-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.select-arrow{flex-shrink:0;color:var(--muted);font-size:15px;line-height:1}.select-trigger[aria-expanded=true]{outline:2px solid #94afe580;outline-offset:1px;border-color:#94afe5}.select-trigger[aria-invalid=true]{border-color:#b77760}.select-trigger:disabled{opacity:.5;cursor:default}.select-menu{position:fixed;inset:auto;margin:0;padding:5px;max-width:calc(100vw - 16px);max-height:min(300px,60dvh);overflow:auto;border:1px solid var(--line);border-radius:13px;background:var(--solid);color:var(--ink);box-shadow:0 12px 40px #243c6230;backdrop-filter:blur(22px);z-index:9999}.select-menu::backdrop{background:transparent}.select-option{display:flex;align-items:center;justify-content:space-between;gap:16px;text-align:left;min-height:35px;padding:8px 11px;width:100%;border:0;border-radius:8px;background:transparent;color:var(--ink);font:12px/1.6 'Segoe UI','Microsoft YaHei',sans-serif;cursor:pointer}.select-option[aria-selected=true]{background:var(--soft);color:var(--accent)}.select-option:hover,.select-option:focus-visible{background:var(--soft);outline:0;filter:none}.select-option:disabled{opacity:.4;cursor:default}[data-theme=dark] .select-menu{box-shadow:0 16px 45px #050b1755}.select-menu:popover-open{display:block}::selection{background:#9bb7eb55;color:var(--ink)}
-</style><main class="note-workspace"><div class="note-head"><div><h1>便签工作室</h1><p>编辑屏幕内容，给今天留一点空间。</p></div><button id="save" type="button">应用并刷新</button></div><div class="note-layout"><section class="card"><label>屏幕标题<input id="title"></label><label>便签内容，每行一条<textarea id="notes" rows="6"></textarea></label><p id="message" role="status">正在读取设置…</p></section><section class="card"><div class="note-sample"><p>屏幕便签 / NOTE4</p><strong id="note-preview-title">给今天<br>留一点空间。</strong></div><p class="note-copy">画面颜色、更新频率和时钟开关在“插件与接入”的插件设置中调整。标题与便签内容在这里管理。</p></section></div></main><script>
-(function(){function theme(value){if(!value)return;document.documentElement.dataset.theme=value.resolved==='dark'?'dark':'light';document.documentElement.style.colorScheme=value.resolved==='dark'?'dark':'light';}theme({resolved:matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'});addEventListener('message',event=>{if(event.source!==parent||event.data?.protocol!=='screen-plugin-ui-v1')return;if(event.data.type==='context'||event.data.type==='appearance')theme(event.data.appearance)});})();
-</script><script data-builtin-ui="height">
-(function(){let last=0,scheduled=false;const report=()=>{scheduled=false;const height=Math.ceil(document.body.getBoundingClientRect().height)+12;if(height!==last){last=height;parent.postMessage({protocol:'screen-plugin-ui-v1',type:'resize',height},'*')}};new ResizeObserver(()=>{if(!scheduled){scheduled=true;requestAnimationFrame(report)}}).observe(document.body);addEventListener('load',report);report();})();
-</script><script data-builtin-ui="controls">// Shared, progressively enhanced select controls. The native select retains form data/validation.
-(function(){
- const registry=new Map();let serial=0;
- function labelFor(s){return s.getAttribute('aria-label')||[...s.labels??[]].map(l=>[...l.childNodes].filter(n=>n.nodeType===3).map(n=>n.textContent).join('')).join(' ').trim()||s.name||'选择';}
- function sync(s){const r=registry.get(s);if(!r)return;const text=s.selectedOptions[0]?.textContent??'请选择';if(r.text.textContent!==text)r.text.textContent=text;r.trigger.disabled=s.disabled;r.trigger.setAttribute('aria-label',labelFor(s)+'：'+text);r.trigger.setAttribute('aria-invalid',String(!s.validity.valid));}
- function close(r,focus=false){if(r.menu.matches(':popover-open'))r.menu.hidePopover();r.trigger.setAttribute('aria-expanded','false');if(focus)r.trigger.focus({preventScroll:true});}
- function position(r){const rect=r.trigger.getBoundingClientRect(),h=r.menu.getBoundingClientRect().height;r.menu.style.left=Math.max(8,Math.min(rect.left,innerWidth-r.menu.offsetWidth-8))+'px';r.menu.style.top=(innerHeight-rect.bottom>=Math.min(h,230)?rect.bottom+6:Math.max(8,rect.top-h-6))+'px';}
- function open(s,r){if(s.disabled)return;r.menu.replaceChildren();for(const [index,o] of [...s.options].entries()){const b=document.createElement('button');b.type='button';b.role='option';b.className='select-option';b.dataset.index=index;b.disabled=o.disabled;b.setAttribute('aria-selected',String(o.selected));const t=document.createElement('span');t.textContent=o.label;b.append(t);const check=document.createElement('span');check.textContent=o.selected?'✓':'';check.setAttribute('aria-hidden','true');b.append(check);b.onclick=e=>{e.preventDefault();s.selectedIndex=index;sync(s);close(r,true);s.dispatchEvent(new Event('input',{bubbles:true}));s.dispatchEvent(new Event('change',{bubbles:true}));};r.menu.append(b);}
- const rect=r.trigger.getBoundingClientRect();r.menu.style.width=Math.max(rect.width,160)+'px';r.menu.showPopover();position(r);r.trigger.setAttribute('aria-expanded','true');(r.menu.querySelector('[aria-selected=true]:not(:disabled)')||r.menu.querySelector('button:not(:disabled)'))?.focus({preventScroll:true});}
- function enhance(root=document){for(const s of root.querySelectorAll('select:not([multiple])')){if(registry.has(s))continue;const wrapper=document.createElement('span');wrapper.className='select-control';s.before(wrapper);wrapper.append(s);s.classList.add('native-select');s.tabIndex=-1;s.setAttribute('aria-hidden','true');const trigger=document.createElement('button');trigger.type='button';trigger.className='select-trigger';trigger.role='combobox';trigger.setAttribute('aria-haspopup','listbox');trigger.setAttribute('aria-expanded','false');const text=document.createElement('span');const arrow=document.createElement('span');arrow.textContent='⌄';arrow.className='select-arrow';arrow.setAttribute('aria-hidden','true');trigger.append(text,arrow);const menu=document.createElement('div');menu.className='select-menu';menu.id='select-menu-'+(++serial);menu.setAttribute('popover','auto');menu.role='listbox';menu.setAttribute('aria-label',labelFor(s));trigger.setAttribute('aria-controls',menu.id);wrapper.append(trigger,menu);const r={trigger,text,menu};registry.set(s,r);sync(s);trigger.onclick=e=>{e.preventDefault();menu.matches(':popover-open')?close(r):open(s,r)};trigger.onkeydown=e=>{if(['ArrowDown','ArrowUp','Home','End'].includes(e.key)){e.preventDefault();open(s,r);if(e.key==='Home')menu.querySelector('button:not(:disabled)')?.focus({preventScroll:true});if(e.key==='End')[...menu.querySelectorAll('button:not(:disabled)')].at(-1)?.focus({preventScroll:true});}};let search='',timer;menu.onkeydown=e=>{const opts=[...menu.querySelectorAll('button:not(:disabled)')],index=opts.indexOf(document.activeElement);if(['ArrowDown','ArrowUp','Home','End'].includes(e.key)){e.preventDefault();const next=e.key==='Home'?0:e.key==='End'?opts.length-1:(index+(e.key==='ArrowDown'?1:-1)+opts.length)%opts.length;opts[next]?.focus({preventScroll:true});}else if(e.key==='Escape'){e.preventDefault();close(r,true)}else if(e.key==='Tab'){close(r);trigger.focus()}else if(e.key.length===1&&!e.ctrlKey&&!e.metaKey){clearTimeout(timer);search+=e.key.toLocaleLowerCase();opts.find(b=>b.textContent.toLocaleLowerCase().startsWith(search))?.focus({preventScroll:true});timer=setTimeout(()=>search='',700);}};menu.addEventListener('toggle',e=>trigger.setAttribute('aria-expanded',String(e.newState==='open')));s.addEventListener('change',()=>sync(s));s.addEventListener('invalid',e=>{e.preventDefault();trigger.focus({preventScroll:true});trigger.setAttribute('aria-invalid','true')});s.form?.addEventListener('reset',()=>setTimeout(()=>sync(s),0));}}
- function refresh(){enhance();for(const [s,r] of registry){if(!s.isConnected){close(r);registry.delete(s)}else sync(s)}}
- new MutationObserver(()=>refresh()).observe(document.documentElement,{childList:true,subtree:true});addEventListener('resize',()=>{for(const r of registry.values())close(r)});document.addEventListener('scroll',e=>{for(const r of registry.values())if(r.menu.matches(':popover-open')&&!r.menu.contains(e.target))position(r)},true);window.schedulerControls={refresh};refresh();
+<!doctype html>
+<html lang="zh-CN">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>便签</title>
+<style>
+:root{--paper:#ffffffb8;--solid:#f8faff;--ink:#2b374c;--muted:#6d7e96;--line:#dce3ee;--accent:#5474c6;--on-accent:#fff;--soft:#e8eef9;--stage:#edf2f8;--green:#56856f;color-scheme:light;font:14px/1.7 'Segoe UI','Microsoft YaHei',sans-serif;color:var(--ink)}
+:root[data-theme=dark]{--paper:#29364bbd;--solid:#263449;--ink:#e3eaf6;--muted:#a3b2ca;--line:#42536d;--accent:#a3baf7;--on-accent:#17263e;--soft:#41577880;--stage:#213044;--green:#9ac6af;color-scheme:dark}
+*{box-sizing:border-box}body{margin:0;padding:24px;background:transparent}main{max-width:1240px;margin:auto}h1{font-size:25px;font-weight:600;letter-spacing:-.5px;margin:0 0 6px}h2{font-size:15px;font-weight:600;margin:0}p{font-size:12px;color:var(--muted);margin:0}button,input,textarea{font:inherit}button{font-size:12px;line-height:1.7;background:var(--soft);color:var(--ink);border:1px solid transparent;padding:9px 16px;border-radius:20px;cursor:pointer}button:hover{border-color:var(--line)}button:disabled{opacity:.45;cursor:default}button:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px solid #94afe5;outline-offset:3px}input,textarea{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--stage);color:var(--ink);font-size:13px;min-width:0}textarea{display:block;min-height:220px;resize:vertical;line-height:1.8}input[type=checkbox]{width:18px;height:18px;accent-color:var(--accent);margin:0}input[type=number]{width:82px}label{display:block;font-size:12px;color:var(--muted)}label>input:not([type=checkbox]),label>textarea{margin-top:8px}[hidden]{display:none!important}.note-head{display:flex;align-items:center;justify-content:space-between;gap:20px;margin-bottom:24px}#save{background:var(--accent);color:var(--on-accent);white-space:nowrap}.note-layout{display:grid;grid-template-columns:190px minmax(260px,1fr) minmax(300px,440px);gap:20px;align-items:start}.card{padding:22px;border:1px solid #ffffffbd;border-radius:18px;background:var(--paper);min-width:0}:root[data-theme=dark] .card{border-color:#6c7d9833}.note-sidebar{padding:18px 12px;display:flex;flex-direction:column;height:548px}.list-head{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:0 6px;margin-bottom:16px}#note-count{color:var(--muted);font-size:11px}#add-note{margin:0 6px 18px}#note-list{overflow-y:auto;overscroll-behavior:contain;min-height:0;flex:1;scrollbar-width:thin;scrollbar-color:var(--line) transparent;padding:0 4px;display:flex;flex-direction:column;gap:7px}.note-item{flex-shrink:0;width:100%;text-align:left;background:transparent;border-radius:10px;padding:12px 10px;min-height:68px}.note-item[aria-pressed=true]{background:var(--soft);border-color:var(--line);color:var(--accent)}.note-name{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px;font-weight:500}.note-snippet{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--muted);font-size:11px;margin-top:4px}.editor-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:24px}#delete-note{color:#ad635e;background:transparent;padding:4px 0;border-radius:4px}.title-toggle{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;color:var(--ink);font-size:13px}#title-row{margin-bottom:18px}fieldset{border:0;margin:0;padding:0;min-width:0}#notes-row{margin-bottom:18px}.font-control{display:flex;align-items:center;gap:12px}.font-control input{margin:0!important}.font-control span{font-size:12px;color:var(--muted)}#message{margin-top:24px;min-height:22px;color:var(--green);font-size:12px;overflow-wrap:anywhere}#message.error{color:#ba7368}.preview-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:22px}.preview-head span{font-size:11px;color:var(--muted)}#preview{display:block;width:100%;height:auto;aspect-ratio:4/3;border:1px solid var(--line);background:white;border-radius:3px}.preview-copy{margin-top:18px;font-size:11px}.empty{padding:16px 8px;font-size:12px;color:var(--muted)}#empty-editor{min-height:370px;display:flex;align-items:center;justify-content:center;text-align:center;color:var(--muted);font-size:13px}
+@media(max-width:1060px){.note-layout{grid-template-columns:170px minmax(250px,1fr)}.preview-card{grid-column:2}.note-sidebar{grid-row:1/3;position:sticky;top:16px;height:548px}#preview{max-width:400px;margin:auto}}
+@media(max-width:620px){body{padding:16px}.note-layout{grid-template-columns:1fr;gap:16px}.note-sidebar{grid-row:auto;position:static;height:240px}.preview-card{grid-column:auto}.card{padding:18px}.note-head{align-items:flex-start;gap:10px}h1{font-size:22px}.note-head p{max-width:180px}.note-head button{padding:9px 12px}textarea{min-height:180px}}
+</style>
+<main>
+ <header class="note-head"><div><h1>便签</h1><p>把想记住的事，留在屏幕上。</p></div><button id="save" type="button" disabled>应用到设备</button></header>
+ <div class="note-layout">
+  <nav class="card note-sidebar" aria-label="便签管理"><div class="list-head"><h2>我的便签</h2><span id="note-count"></span></div><button id="add-note" type="button" disabled>＋ 新建</button><div id="note-list" aria-label="便签列表"></div></nav>
+  <section class="card" id="editor"><div class="editor-head"><h2>编辑便签</h2><button id="delete-note" type="button" disabled>删除当前便签</button></div><div id="empty-editor" hidden>还没有便签，点击左侧“新建”开始。</div><fieldset id="note-fields" disabled><label class="title-toggle" for="show-title">显示标题<input id="show-title" type="checkbox"></label><label id="title-row">屏幕标题<input id="title" maxlength="80" autocomplete="off"></label><label id="notes-row">正文 · 回车换行<textarea id="notes" rows="8" maxlength="16000" placeholder="写下想记住的事…"></textarea></label><label class="font-control" for="font-size">正文字号<input id="font-size" type="number" min="12" max="64" step="1" value="24" required><span>px</span></label></fieldset><p id="message" role="status" aria-live="polite">正在读取设置…</p></section>
+  <section class="card preview-card"><div class="preview-head"><h2>实时预览</h2><span>400 × 300</span></div><canvas id="preview" width="400" height="300" aria-label="当前便签画面预览"></canvas><p class="preview-copy">编辑即时预览，点击“应用到设备”后保存并更新画面。</p></section>
+ </div>
+</main>
+<script>
+(()=>{
+ const protocol='screen-plugin-ui-v1', $=id=>document.getElementById(id);
+ let settings={},notes=[],active='',loaded=false,dirty=false,saving=null,revision=0,deviceState={};
+ const current=()=>notes.find(n=>n.id===active);
+ const send=message=>parent.postMessage({protocol,...message},'*');
+ const status=(text,error=false)=>{$('message').textContent=text;$('message').classList.toggle('error',error)};
+ function theme(appearance){if(!appearance)return;document.documentElement.dataset.theme=appearance.resolved==='dark'?'dark':'light'}
+ theme({resolved:matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'});
+ function readNotes(s){
+  if(s.document?.version===2&&Array.isArray(s.document.notes))return structuredClone(s.document.notes);
+  const texts=String(s.notes??'').split(/\r\n|\r|\n/).map(t=>t.trim()).filter(Boolean);
+  return (texts.length?texts:['写下你的第一条便签。']).map((text,i)=>({id:'legacy-'+i,title:s.title??'',text,show_title:true,font_size:24}));
+ }
+ const summary=n=>n.text.replace(/\s+/gu,' ').trim();
+ const name=n=>(n.show_title&&n.title.trim()?n.title.trim():Array.from(summary(n)).slice(0,12).join(''))||'空白便签';
+ function list(){
+  const scroll=$('note-list').scrollTop;
+  $('note-list').replaceChildren();$('note-count').textContent=notes.length+' 张';
+  for(const n of notes){
+   const button=document.createElement('button');button.type='button';button.className='note-item';button.dataset.id=n.id;button.setAttribute('aria-pressed',String(n.id===active));
+   const title=document.createElement('span');title.className='note-name';title.textContent=name(n);button.title=name(n);
+   const snippet=document.createElement('span');snippet.className='note-snippet';snippet.textContent=n.show_title?(summary(n)||'空白便签'):'无标题 · 正文摘要';
+   button.append(title,snippet);button.onclick=()=>{if(active===n.id)return;active=n.id;changed();editor();};$('note-list').append(button);
+  }
+  if(!notes.length){const empty=document.createElement('p');empty.className='empty';empty.textContent='还没有便签';$('note-list').append(empty)}
+  $('note-list').scrollTop=scroll;
+ }
+ function editor(){
+  const n=current();$('note-fields').disabled=!n;$('note-fields').hidden=!n;$('empty-editor').hidden=!!n;$('delete-note').disabled=!n;
+  $('title').value=n?.title??'';$('notes').value=n?.text??'';$('show-title').checked=n?.show_title??false;$('font-size').value=n?.font_size??24;$('title-row').hidden=!n?.show_title;
+  list();preview();
+ }
+ function changed(){dirty=true;revision++;status(saving?'正在保存，后续修改仍保留为草稿。':'未应用 · 切换便签保留当前编辑');list();preview()}
+ function shorten(text,measure){if(measure(text)<=356)return text;const chars=Array.from(text);while(chars.length&&measure(chars.join('')+'…')>356)chars.pop();return chars.join('')+'…'}
+ // Match the host's json.dumps(..., ensure_ascii=False) byte budget.
+ function settingsJSON(value){
+  if(Array.isArray(value))return '['+value.map(settingsJSON).join(', ')+']';
+  if(value&&typeof value==='object')return '{'+Object.entries(value).map(([key,item])=>JSON.stringify(key)+': '+settingsJSON(item)).join(', ')+'}';
+  return JSON.stringify(value);
+ }
+ function wrap(text,measure){
+  const lines=[];
+  for(let paragraph of text.replace(/\r\n|\r/g,'\n').split('\n')){
+   // Match Python expandtabs(4), including tabs in mixed Chinese/Latin text.
+   let expanded='',column=0;for(const char of paragraph){if(char==='\t'){const count=4-column%4;expanded+=' '.repeat(count);column+=count}else{expanded+=char;column++}}
+   let line='';for(const char of expanded){if(line&&measure(line+char)>356){lines.push(line);line=''}line+=char}lines.push(line);
+  }return lines;
+ }
+ function preview(){
+  const c=$('preview'),ctx=c.getContext('2d'),n=current();
+  const dark=(settings.theme==='深色')!==!!deviceState.inverted;ctx.fillStyle=dark?'black':'white';ctx.fillRect(0,0,400,300);ctx.fillStyle=dark?'white':'black';
+  if(!n){c.setAttribute('aria-label','空白便签画面');return}
+  c.setAttribute('aria-label',name(n)+' · 画面预览');
+  // Align the visible glyph top with Pillow's anchor='lt'.
+  const draw=(text,x,y)=>{ctx.textBaseline='alphabetic';ctx.fillText(text,x,y+ctx.measureText(text).actualBoundingBoxAscent)};
+  let top=22;if(n.show_title){ctx.font='21px "Microsoft YaHei", sans-serif';draw(shorten(n.title.replace(/\n/g,' '),t=>ctx.measureText(t).width),22,20);ctx.fillRect(22,60,357,1);top=82}
+  const size=Math.max(12,Math.min(64,Number(n.font_size)||24));ctx.font=size+'px "Microsoft YaHei", sans-serif';
+  const measure=t=>ctx.measureText(t).width,lineHeight=Math.round(size*1.45),limit=Math.max(1,Math.floor((278-top)/lineHeight)),lines=wrap(n.text,measure),visible=lines.slice(0,limit);
+  if(lines.length>limit)visible[visible.length-1]=shorten(visible.at(-1)+'…',measure);
+  visible.forEach((text,row)=>draw(text,22,top+row*lineHeight));
+ }
+ $('title').oninput=()=>{current().title=$('title').value;changed()};
+ $('notes').oninput=()=>{current().text=$('notes').value;changed()};
+ $('show-title').onchange=()=>{current().show_title=$('show-title').checked;$('title-row').hidden=!current().show_title;changed()};
+ $('font-size').oninput=()=>{if($('font-size').validity.valid){current().font_size=Number($('font-size').value);changed()}};
+ $('font-size').onchange=()=>{if(!$('font-size').validity.valid||!$('font-size').value)$('font-size').value=current().font_size};
+ $('add-note').onclick=()=>{
+  const id=globalThis.crypto?.randomUUID?.()??('note-'+Date.now()+'-'+Math.random().toString(36).slice(2));
+  notes.push({id,title:'',text:'',show_title:false,font_size:24});active=id;changed();editor();$('note-list').lastElementChild?.scrollIntoView({block:'nearest'});$('notes').focus({preventScroll:true});
+ };
+ $('delete-note').onclick=()=>{const i=notes.findIndex(n=>n.id===active);if(i<0)return;notes.splice(i,1);active=notes[Math.min(i,notes.length-1)]?.id??'';changed();editor()};
+ $('save').onclick=()=>{
+  if(!loaded||saving)return;
+  if(!$('font-size').validity.valid){$('font-size').reportValidity();return}
+  const document={version:2,notes:structuredClone(notes)};
+  if(new TextEncoder().encode(settingsJSON(document)).length>32768){status('便签内容过多，请精简后再保存（总计最多 32 KiB）。',true);return}
+  const request_id='save-note-'+Date.now();saving={request_id,revision};$('save').disabled=true;status('正在保存…');
+  send({type:'save_settings',request_id,settings:{...settings,document,active_note:active}});
+ };
+ addEventListener('message',event=>{
+  if(event.source!==parent||event.data?.protocol!==protocol)return;const m=event.data;
+  if(m.type==='context'){
+   settings=m.settings??{};deviceState=m.state??{};theme(m.appearance);
+   if(!loaded||(!dirty&&!saving)){
+    notes=readNotes(settings);const ids=notes.map(n=>n.id);active=ids.includes(deviceState.current_note)?deviceState.current_note:ids.includes(settings.active_note)?settings.active_note:(notes[Number(deviceState.index)||0]?.id??ids[0]??'');editor();
+    status(m.enabled===false?'插件未启用，保存后将在启用时更新画面。':'已连接 · 编辑后应用到设备');
+   }else preview();
+   loaded=true;$('add-note').disabled=false;$('save').disabled=!!saving;
+  }
+  if(m.type==='appearance')theme(m.appearance);
+  if(m.type==='state'){deviceState=m.state??{};preview()}
+  if(m.type==='result'&&saving&&m.request_id===saving.request_id){
+   const unchanged=revision===saving.revision;saving=null;$('save').disabled=false;
+   if(m.ok){dirty=!unchanged;status(unchanged?'已保存，启用时自动更新画面。':'已保存，后续修改尚未应用。')}else{dirty=true;status(m.error||'保存失败，请重试。',true)}
+  }
+ });
+ let lastHeight=0,scheduled=false;
+ const report=()=>{scheduled=false;const height=Math.ceil(document.body.getBoundingClientRect().height)+12;if(height!==lastHeight){lastHeight=height;send({type:'resize',height})}};
+ new ResizeObserver(()=>{if(!scheduled){scheduled=true;requestAnimationFrame(report)}}).observe(document.body);
+ addEventListener('load',()=>{preview();report()});preview();send({type:'ready'});
 })();
-</script><script>
-let settings={};
-function previewTitle(){document.querySelector('#note-preview-title').textContent=document.querySelector('#title').value||'给今天留一点空间。'}
-document.querySelector('#title').addEventListener('input',previewTitle);
-addEventListener('message',event=>{if(event.source!==parent)return;const m=event.data;if(m?.protocol!=='screen-plugin-ui-v1')return;if(m.type==='context'){settings=m.settings;document.querySelector('#title').value=settings.title;document.querySelector('#notes').value=settings.notes;document.querySelector('#message').textContent='已连接墨枢';previewTitle();}if(m.type==='result'){document.querySelector('#message').textContent=m.ok?'设置已保存，启用时自动生成新画面':m.error;}});
-document.querySelector('#save').onclick=()=>parent.postMessage({protocol:'screen-plugin-ui-v1',type:'save_settings',request_id:'save-note',settings:{...settings,title:document.querySelector('#title').value,notes:document.querySelector('#notes').value}},'*');
-parent.postMessage({protocol:'screen-plugin-ui-v1',type:'ready'},'*');
-</script></html>
+</script>
+</html>

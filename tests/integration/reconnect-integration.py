@@ -47,6 +47,9 @@ def main():
   state=lambda:call('/control/state')
   cmd=lambda op,data={}:call('/control/command',{'op':op,'data':data})
   def disconnect(seq):peer.sendto(packet(4,seq,b'\1'),client)
+  log_dir=Path(d)/'logs';log_dir.mkdir()
+  previous=json.dumps({'message':'previous-session','padding':'x'*(2*1024*1024)})+'\n'
+  (log_dir/'runtime.log').write_text(previous,encoding='utf-8')
   try:
    process=subprocess.Popen([os.environ.get('SCHEDULER_BINARY',str(ROOT/'target/debug/note4-screen-scheduler.exe')),'--config',str(Path(d)/'settings.json'),'--port',str(port),'--http-bind','127.0.0.1:0','--sdk-bind','127.0.0.1:0'],stdout=subprocess.DEVNULL,stderr=subprocess.PIPE)
    token=wait(lambda:state()['token']);cmd('reconnect_settings',{'enabled':True,'window_seconds':4,'interval_seconds':1});cmd('connect',{'target':'127.0.0.1:'+str(peer.getsockname()[1])});assert state()['device']['connected']
@@ -57,6 +60,15 @@ def main():
    answer=True;cmd('connect',{'target':'127.0.0.1:'+str(peer.getsockname()[1])});answer=False;disconnect(32);wait(lambda:state()['device']['reconnect_until']);cmd('disconnect');assert state()['device']['reconnect_until'] is None;before=opens;time.sleep(1.3);assert opens==before
    checks.append('manual_disconnect_cancels_scheduled_reconnect')
    cmd('stop');process.wait(10)
+   records=[json.loads(line) for line in (Path(d)/'logs/runtime.log').read_text(encoding='utf-8').splitlines()]
+   messages=[r['message'] for r in records]
+   assert any('设备已断开：DeviceExit' in m and 'sending=' in m for m in messages)
+   assert any('自动重连' in m for m in messages)
+   assert any('用户主动断开' in m for m in messages)
+   assert all(r['unix_ms']>0 for r in records)
+   assert (log_dir/'runtime.previous.log').read_text(encoding='utf-8')==previous
+   checks.append('connection_diagnostics_survive_process_exit')
+   checks.append('runtime_log_rotates_and_preserves_previous_session')
   finally:
    if process and process.poll() is None:process.terminate();process.wait(5)
    running=False;thread.join(2);peer.close()

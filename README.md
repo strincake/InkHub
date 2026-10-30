@@ -86,6 +86,8 @@
 
 “连接与切换 → 软件设置”提供**随 Windows 启动**开关，默认关闭；开启后登录 Windows 时仅驻留托盘，不自动弹出网页。设置与插件数据保存在 `%LOCALAPPDATA%/InkHub/`，升级或卸载时保留。
 
+设备排查日志：网页“切换记录”显示最近 80 条；完整运行记录自动追加到配置文件旁的 `logs/runtime.log`（安装版为 `%LOCALAPPDATA%/InkHub/logs/runtime.log`，源码默认位于项目 `logs/`）。日志包含连接尝试、SDK 断开原因、发送/录音状态、重连结果和画面切换，重启后保留。每行是 JSON，`unix_ms` 为实际时间的 Unix 毫秒，`elapsed_ms` 为该进程启动后的毫秒，`pid` 用于区分运行实例。单文件约 2 MB 后轮换，另保留 `runtime.previous.log`。遇到断开后请保留这两个文件，并记下大致发生时间；日志可能包含设备局域网地址和来源名称，分享前可检查。`startup.log` 仅用于安装版启动失败。
+
 构建安装包使用 `./scripts/package-windows.ps1`，详见[Windows 安装与发布](docs/development/windows-release-plan.md)。以下环境准备面向源码开发者。
 
 ## 环境准备
