@@ -48,6 +48,13 @@ def main():
             assert (profile/'InkHub/settings.json').is_file()
             assert not (app.parent/'settings.json').exists()
             checks.append('isolated_install_uses_own_python_and_per_user_data_without_system_python')
+            # Isolated embedded Python must resolve the AI bridge's sibling module too.
+            import base64,zipfile
+            skill=post('/control/ai',{'op':'skill'})
+            with zipfile.ZipFile(io.BytesIO(base64.b64decode(skill['zip_base64']))) as archive:
+                assert 'name: inkhub-plugin' in archive.read('inkhub-plugin/SKILL.md').decode('utf-8')
+                assert 'ctx.show' in archive.read('inkhub-plugin/references/plugin-development.md').decode('utf-8')
+            checks.append('bundled_ai_bridge_and_embedded_skill_work_without_system_python')
             duplicate=subprocess.run([str(app),'--no-browser','--autostart','--port',str(port)],cwd=folder,env=env,stdout=subprocess.DEVNULL,stderr=subprocess.PIPE,timeout=10)
             assert duplicate.returncode==0 and child.poll() is None
             checks.append('second_launch_reuses_existing_instance_without_port_conflict')

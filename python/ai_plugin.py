@@ -13,6 +13,8 @@ import urllib.parse
 import urllib.request
 import zipfile
 
+# Embedded Python uses an isolated ._pth and omits the script directory.
+sys.path.insert(0, str(Path(__file__).resolve().parent))
 from plugin_tools import member_name, validate_manifest, inspect_package
 
 LIMIT = 2 * 1024 * 1024
