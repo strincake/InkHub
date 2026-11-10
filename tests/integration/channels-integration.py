@@ -69,6 +69,15 @@ def main():
    command('settings',sid,{'priority':2});plugin_op('disable');assert not state()['sources'];assert plugin()['channels']=={}
    plugin_op('enable');wait(lambda:len(plugin()['channels'])==2);sid=plugin()['channels'][key];assert next(s['config']['priority'] for s in state()['sources'] if s['config']['id']==sid)==2
    checks.append('disable_cleans_all_channels_and_enable_restores_saved_rules')
+   saved_settings=plugin()['settings'];saved_keys=set(plugin()['channels'])
+   code,result=call('/control/plugins/install',(ROOT/'dist/plugins/local-gallery.screen-plugin.zip').read_bytes())
+   assert code==200 and result['action']=='update',(code,result)
+   wait(lambda:set(plugin()['channels'])==saved_keys)
+   assert plugin()['enabled'] and plugin()['settings']==saved_settings
+   sid=plugin()['channels'][key]
+   assert next(s['config']['priority'] for s in state()['sources'] if s['config']['id']==sid)==2
+   assert len(state()['sources'])==2
+   checks.append('same_id_update_preserves_multi_channel_settings_and_individual_display_rules')
    # Strict output contract must reject a plugin bypassing the author API.
    file=config.with_suffix('.plugins')/'packages/local-gallery/main.py';original=file.read_text(encoding='utf-8');file.write_text(original+'\n_original=handle\ndef handle(ctx,event):\n _original(ctx,event)\n for c in ctx._channels.values():\n  if c._shown:Image.new("RGB",(50,50)).save(c._output)\n',encoding='utf-8')
    plugin_op('run');wait(lambda:plugin()['error']);assert 'PNG' in plugin()['error'] or '400' in plugin()['error'] or 'limit' in plugin()['error'].lower();file.write_text(original,encoding='utf-8');checks.append('host_rejects_non_screen_sized_plugin_frames')

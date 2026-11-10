@@ -15,3 +15,5 @@ python scripts/pack_plugin.py plugins/desk-note dist/plugins/desk-note.screen-pl
 ```
 
 安装包包含插件源码和资源，不包含 `settings.plugins/` 中的用户配置或私有数据。开发接口见[插件开发指南](../docs/guides/plugin-development.md)。便签与相册也可作为插件开发参考。
+
+手动更新使用原有“安装插件 ZIP”入口：选择同 ID 的新包，校验后显示新旧版本，确认即可替换代码并保留设置、私有数据、显示规则与启用状态，无需先卸载。新增设置取默认值，已移除设置不再传给新代码；已有值与新清单不兼容时拒绝更新。

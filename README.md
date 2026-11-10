@@ -42,6 +42,12 @@
 
 快速入门编写插件， 可阅读[plugin-development](https://github.com/strincake/screen-scheduler/blob/main/docs/guides/plugin-development.md)，或将该链接传递给AI。
 
+也可以在“插件与接入 → AI 写插件”中填写需求：选择 API 服务商或本地 MCP，生成后查看源码、下载 ZIP，或进入现有安装预览。支持 OpenAI Chat Completions 兼容接口与 Anthropic Messages，预置 OpenAI、Claude、DeepSeek、通义千问、Kimi、Gemini、Ollama 的 Endpoint，并可自行修改地址和模型名称。密钥仅保留在当前网页会话，其他连接配置保存在本机浏览器。
+
+本地 MCP 支持 stdio 与 Streamable HTTP；需要连接**提供代码生成工具**的服务，读取工具后选择工具并按其参数说明填写 JSON。`{{prompt}}` 和 `{{instructions}}` 分别替换成需求和完整开发说明。MCP 地址限本机回环地址；stdio 填写程序路径、JSON 参数数组及可选环境变量。生成代码只进行清单、路径及语法校验，不会自动运行；安装或更新仍需经过预览确认。
+
+如使用外部 AI，在同一入口下载开发 Skill，或直接使用仓库中的 [inkhub-plugin](skills/inkhub-plugin/SKILL.md)。Skill ZIP 自带完整开发指南，解压后将 `inkhub-plugin` 放入所用 AI 工具的 Skill 目录。
+
 ![插件设置页](docs/images/插件设置页.png)
 *插件内嵌设置页*
 

@@ -184,14 +184,68 @@ impl Plugin {
 fn script(name: &str) -> PathBuf {
     crate::runtime::layout().script(name)
 }
+
+#[cfg(all(test, windows))]
+mod worker_tests {
+    use super::*;
+
+    #[tokio::test]
+    async fn cancelled_worker_releases_private_files_before_returning() {
+        let folder = script("plugin_worker.py")
+            .parent()
+            .unwrap()
+            .parent()
+            .unwrap()
+            .join("artifacts/tmp")
+            .join(format!("worker-cancel-{}", uuid::Uuid::new_v4()));
+        std::fs::create_dir_all(&folder).unwrap();
+        let file = folder.join("held.txt");
+        let cancel = Arc::new(Notify::new());
+        let job = tokio::spawn(python_cancellable(
+            vec!["-c".into(), "import sys,time; f=open(sys.argv[1],'w'); f.write('ready'); f.flush(); time.sleep(60)".into(), file.to_string_lossy().into()],
+            vec![], 1024, 10, Some(cancel.clone()),
+        ));
+        let started = tokio::time::timeout(Duration::from_secs(5), async {
+            loop {
+                if std::fs::read(&file).ok().as_deref() == Some(b"ready") {
+                    break;
+                }
+                tokio::time::sleep(Duration::from_millis(5)).await;
+            }
+        })
+        .await;
+        cancel.notify_one();
+        let result = tokio::time::timeout(Duration::from_secs(3), job)
+            .await
+            .unwrap()
+            .unwrap();
+        assert!(started.is_ok(), "worker did not open its private file");
+        assert_eq!(result.unwrap_err(), "已取消");
+        // Windows cannot delete this open file until the old process has actually exited.
+        std::fs::remove_file(file).expect("cancelled worker still holds its private file");
+        std::fs::remove_dir(folder).unwrap();
+    }
+}
+
 pub(super) async fn python(
     args: Vec<String>,
     input: Vec<u8>,
     limit: usize,
     seconds: u64,
 ) -> Result<Vec<u8>, String> {
+    python_cancellable(args, input, limit, seconds, None).await
+}
+
+async fn python_cancellable(
+    args: Vec<String>,
+    input: Vec<u8>,
+    limit: usize,
+    seconds: u64,
+    cancel: Option<Arc<Notify>>,
+) -> Result<Vec<u8>, String> {
     let mut command = tokio::process::Command::new(crate::runtime::layout().python());
-    #[cfg(windows)] command.creation_flags(0x08000000);
+    #[cfg(windows)]
+    command.creation_flags(0x08000000);
     let mut child = command
         .args(args)
         .env_clear()
@@ -212,7 +266,12 @@ pub(super) async fn python(
         }))
         .env("PYTHONIOENCODING", "utf-8")
         .env("PYTHONDONTWRITEBYTECODE", "1")
-        .env("INKHUB_FONT", crate::runtime::layout().root.join("assets/fonts/NotoSansSC.ttf"))
+        .env(
+            "INKHUB_FONT",
+            crate::runtime::layout()
+                .root
+                .join("assets/fonts/NotoSansSC.ttf"),
+        )
         .stdin(std::process::Stdio::piped())
         .stdout(std::process::Stdio::piped())
         .stderr(std::process::Stdio::piped())
@@ -222,41 +281,58 @@ pub(super) async fn python(
     let mut stdout = child.stdout.take().unwrap().take(limit as u64 + 1);
     let mut stderr = child.stderr.take().unwrap().take(65537);
     let mut stdin = child.stdin.take().unwrap();
-    let result = tokio::time::timeout(Duration::from_secs(seconds), async {
-        stdin.write_all(&input).await.map_err(|e| e.to_string())?;
-        drop(stdin);
-        let mut out = vec![];
-        let mut err = vec![];
-        let (status, read_out, read_err) = tokio::join!(
-            child.wait(),
-            stdout.read_to_end(&mut out),
-            stderr.read_to_end(&mut err)
-        );
-        read_out.map_err(|e| e.to_string())?;
-        read_err.map_err(|e| e.to_string())?;
-        let status = status.map_err(|e| e.to_string())?;
-        if out.len() > limit || err.len() > 65536 {
-            return Err("插件输出日志或返回内容过大".into());
+    let result = {
+        let work = tokio::time::timeout(Duration::from_secs(seconds), async {
+            stdin.write_all(&input).await.map_err(|e| e.to_string())?;
+            drop(stdin);
+            let mut out = vec![];
+            let mut err = vec![];
+            let (status, read_out, read_err) = tokio::join!(
+                child.wait(),
+                stdout.read_to_end(&mut out),
+                stderr.read_to_end(&mut err)
+            );
+            read_out.map_err(|e| e.to_string())?;
+            read_err.map_err(|e| e.to_string())?;
+            let status = status.map_err(|e| e.to_string())?;
+            if out.len() > limit || err.len() > 65536 {
+                return Err("插件输出日志或返回内容过大".into());
+            }
+            if !status.success() {
+                return Err(String::from_utf8_lossy(&err)
+                    .trim()
+                    .chars()
+                    .rev()
+                    .take(2000)
+                    .collect::<String>()
+                    .chars()
+                    .rev()
+                    .collect());
+            }
+            Ok(out)
+        });
+        tokio::pin!(work);
+        tokio::select! {
+            result = &mut work => Some(result),
+            _ = async {
+                match cancel {
+                    Some(cancel) => cancel.notified().await,
+                    None => std::future::pending::<()>().await,
+                }
+            } => None,
         }
-        if !status.success() {
-            return Err(String::from_utf8_lossy(&err)
-                .trim()
-                .chars()
-                .rev()
-                .take(2000)
-                .collect::<String>()
-                .chars()
-                .rev()
-                .collect());
-        }
-        Ok(out)
-    })
-    .await;
+    };
     match result {
-        Ok(r) => r,
-        Err(_) => {
+        Some(Ok(r)) => r,
+        stopped => {
+            // Await termination before execute() clears running or an updater replaces files.
             let _ = child.kill().await;
-            Err(format!("插件执行超过 {seconds} 秒，已终止本次执行"))
+            let _ = child.wait().await;
+            Err(if stopped.is_none() {
+                "已取消".into()
+            } else {
+                format!("插件执行超过 {seconds} 秒，已终止本次执行")
+            })
         }
     }
 }
@@ -492,7 +568,7 @@ async fn execute(a: Arc<App>, job: Job) {
                 .into(),
         ];
         let request = serde_json::to_vec(&job.request).unwrap();
-        result = tokio::select! {_=job.cancel.notified()=>Err("已取消".into()),r=python(args,request,96*1024,15)=>match r{Ok(raw)=>match serde_json::from_slice::<Value>(&raw){Ok(value)=>{if value["shown"]==true{match tokio::fs::read(&output).await{Ok(bytes) if bytes.len()<=8*1024*1024=>{let normalized=tokio::task::spawn_blocking(move||validate_frame(&bytes)).await;match normalized{Ok(Ok(png))=>Ok((value,Some(png))),_=>Err("插件输出不是有效 PNG".into())}},_=>Err("插件没有生成有效图片".into())}}else{Ok((value,None))}},Err(e)=>Err(format!("插件返回格式错误：{e}"))},Err(e)=>Err(e)}};
+        result = match python_cancellable(args,request,96*1024,15,Some(job.cancel.clone())).await {Ok(raw)=>match serde_json::from_slice::<Value>(&raw){Ok(value)=>{if value["shown"]==true{match tokio::fs::read(&output).await{Ok(bytes) if bytes.len()<=8*1024*1024=>{let normalized=tokio::task::spawn_blocking(move||validate_frame(&bytes)).await;match normalized{Ok(Ok(png))=>Ok((value,Some(png))),_=>Err("插件输出不是有效 PNG".into())}},_=>Err("插件没有生成有效图片".into())}}else{Ok((value,None))}},Err(e)=>Err(format!("插件返回格式错误：{e}"))},Err(e)=>Err(e)};
     }
     let result = result.and_then(|(value, png)| {
         let audio = if value["audio"].is_null() {
@@ -741,11 +817,132 @@ pub async fn shutdown(a: &Arc<App>) {
     }
 }
 
+// Validate everything before stopping an installed plugin or touching its package.
+async fn inspect_install(
+    a: &Arc<App>,
+    bytes: &Bytes,
+) -> Result<(Value, Option<Value>, Value), String> {
+    let raw = python(
+        vec![
+            script("plugin_tools.py").to_string_lossy().into(),
+            "inspect".into(),
+        ],
+        bytes.to_vec(),
+        65536,
+        10,
+    )
+    .await?;
+    let manifest: Value = serde_json::from_slice(&raw).map_err(|e| e.to_string())?;
+    let saved = a
+        .plugins
+        .lock()
+        .await
+        .items
+        .get(manifest["id"].as_str().ok_or("插件缺少 ID")?)
+        .map(|p| (p.disk.settings.clone(), p.manifest["version"].clone()));
+    let (settings, previous_version) = if let Some((values, version)) = saved {
+        let raw = python(
+            vec![script("plugin_tools.py").to_string_lossy().into(), "merge-settings".into()],
+            serde_json::to_vec(&json!({"fields":manifest["settings"].as_array().cloned().unwrap_or_default(),"values":values})).unwrap(),
+            2 * 1024 * 1024,
+            5,
+        ).await?;
+        (
+            Some(serde_json::from_slice(&raw).map_err(|e| e.to_string())?),
+            version,
+        )
+    } else {
+        (None, Value::Null)
+    };
+    Ok((manifest, settings, previous_version))
+}
+
+pub async fn inspect(State(a): State<Arc<App>>, h: HeaderMap, bytes: Bytes) -> ApiResult {
+    auth(&a, &h)?;
+    let _operation = a.plugin_operation.lock().await;
+    let (manifest, settings, previous_version) = inspect_install(&a, &bytes).await.map_err(bad)?;
+    Ok(Json(
+        json!({"id":manifest["id"],"name":manifest["name"],"version":manifest["version"],"previous_version":previous_version,"action":if settings.is_some(){"update"}else{"install"}}),
+    ))
+}
+
+async fn replace_installed(
+    a: &Arc<App>,
+    id: &str,
+    manifest: Value,
+    settings: Value,
+    bytes: Bytes,
+) -> Result<(), String> {
+    let enabled = a.plugins.lock().await.items[id].disk.enabled;
+    // Keep the Plugin object and epoch so a cancelled worker can never write stale state.
+    let result = async {
+        set_enabled(a.clone(), id, false).await?;
+        for _ in 0..50 {
+            if !a.plugins.lock().await.items[id].running {
+                break;
+            }
+            tokio::time::sleep(Duration::from_millis(50)).await;
+        }
+        let root = {
+            let m = a.plugins.lock().await;
+            if m.items[id].running {
+                return Err("插件仍在退出，未更新，请稍后重试".into());
+            }
+            m.root.clone()
+        };
+        python(
+            vec![
+                script("plugin_tools.py").to_string_lossy().into(),
+                "update".into(),
+                root.to_string_lossy().into(),
+                id.into(),
+            ],
+            bytes.to_vec(),
+            65536,
+            10,
+        )
+        .await?;
+        let mut m = a.plugins.lock().await;
+        let p = m.items.get_mut(id).ok_or("插件不存在")?;
+        p.manifest = manifest;
+        p.disk.settings = settings;
+        p.last_run = None;
+        p.last_log.clear();
+        m.save(id)
+            .map_err(|e| format!("插件代码已更新，但保存设置失败：{e}"))
+    }
+    .await;
+    // Both a successful update and a failed replacement restore the original switch.
+    let resume = if enabled {
+        set_enabled(a.clone(), id, true).await
+    } else {
+        Ok(())
+    };
+    match (result, resume) {
+        (Err(e), Err(r)) => Err(format!("{e}；恢复启用状态失败：{r}")),
+        (Err(e), _) => Err(e),
+        (_, Err(r)) => Err(format!("插件已更新，但恢复启用状态失败：{r}")),
+        _ => Ok(()),
+    }
+}
+
 pub async fn install(State(a): State<Arc<App>>, h: HeaderMap, bytes: Bytes) -> ApiResult {
     auth(&a, &h)?;
     let _operation = a.plugin_operation.lock().await;
+    let (manifest, settings, _) = inspect_install(&a, &bytes).await.map_err(bad)?;
+    let id = manifest["id"]
+        .as_str()
+        .ok_or_else(|| bad("插件缺少 ID"))?
+        .to_string();
+    if let Some(settings) = settings {
+        replace_installed(&a, &id, manifest, settings, bytes)
+            .await
+            .map_err(bad)?;
+        let enabled = a.plugins.lock().await.items[&id].disk.enabled;
+        return Ok(Json(json!({"id":id,"enabled":enabled,"action":"update"})));
+    }
     let root = a.plugins.lock().await.root.clone();
-    let raw = python(
+    python(
         vec![
             script("plugin_tools.py").to_string_lossy().into(),
             "install".into(),
@@ -757,15 +954,10 @@ pub async fn install(State(a): State<Arc<App>>, h: HeaderMap, bytes: Bytes) -> A
     )
     .await
     .map_err(bad)?;
-    let manifest: Value = serde_json::from_slice(&raw).map_err(bad)?;
-    let id = manifest["id"]
-        .as_str()
-        .ok_or_else(|| bad("插件缺少 ID"))?
-        .to_string();
     let mut m = a.plugins.lock().await;
     m.items.insert(id.clone(), Plugin::new(manifest, None));
     m.save(&id).map_err(bad)?;
-    Ok(Json(json!({"id":id,"enabled":false})))
+    Ok(Json(json!({"id":id,"enabled":false,"action":"install"})))
 }
 #[derive(Deserialize)]
 pub struct Control {

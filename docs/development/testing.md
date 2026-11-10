@@ -56,6 +56,8 @@ python tests/integration/builtin-plugins-integration.py
 npm install --no-save --package-lock=false playwright@1.62.1
 npx playwright install chromium
 node tests/browser/desk-note-browser-check.cjs
+node tests/browser/plugin-update-browser-check.cjs
+node tests/browser/ai-plugin-browser-check.cjs
 node tests/browser/spatial-browser-check.cjs
 node tests/browser/channels-browser-check.cjs
 node tests/browser/companion-browser-check.cjs
@@ -68,6 +70,10 @@ node tests/browser/companion-browser-check.cjs
 `tests/manual/spatial-live-smoke.cjs` 是**手动检查现有运行实例**的脚本，会修改 `38476` 端口服务的主题等状态，不纳入自动迁移验证。
 
 可以通过 `NODE_PATH`、`CHROMIUM_PATH` 指定本机已安装模块和浏览器，不把安装位置写入共享源码。
+
+插件更新检查复用 `dist/plugins/desk-note.screen-plugin.zip` 和 Debug 宿主，通过安装入口分别安装、更新及选择无效 ZIP，验证版本预览、个人设置保留、禁用状态、无效包拦截及更换文件时过期预检响应的隔离。`tests/integration/plugin-integration.py` 还覆盖更新运行中的插件、私有文件与显示规则继承、不兼容设置拒绝、重启恢复；Python 单元测试验证代码目录替换失败时回退。
+
+AI 插件检查使用本机模拟 API 和 stdio MCP，不消耗真实模型额度；覆盖首页布局与图标、生成校验、源码预览、ZIP 下载、进入安装预览、安装后禁用、无效响应恢复、MCP 工具发现与调用、Skill 下载、深色和手机布局。`test_ai_plugin.py` 额外验证两类 API 请求、HTTP MCP 会话、路径和语法拒绝、敏感错误信息过滤。真实服务商密钥及实体设备效果需在对应环境另行验证。
 
 ## 产物与证明范围
 

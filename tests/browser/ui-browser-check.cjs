@@ -19,7 +19,7 @@ fs.mkdirSync(path.resolve(__dirname,'../../artifacts/tests/browser/general'),{re
   const command=async(op,id='',data={})=>page.evaluate(async({op,id,data})=>{const s=await(await fetch('/control/state')).json();const r=await fetch('/control/command',{method:'POST',headers:{'content-type':'application/json','x-control-token':s.token},body:JSON.stringify({op,id,data})});if(!r.ok)throw Error(await r.text());return r.json()},{op,id,data});
   assert.equal(await page.locator('#add-source').count(),0);
   assert.equal(await page.locator('#source-list').isVisible(),false);
-  assert.equal(await page.locator('#mode').isVisible(),true);
+  assert.equal(await page.locator('#mode').count(),0);assert.equal(await page.locator('#target').isVisible(),true);
   assert.equal(await page.locator('.workspace-grid .queue-panel').count(),1);
   checks.push('overview_contains_preview_queue_and_device_connection');
   await command('add','',{name:'任务进度',priority:3,min_ms:2000,hold_ms:30000,ttl_ms:120000,persistent:false,bypass:false,enabled:true,format:'mono'});
