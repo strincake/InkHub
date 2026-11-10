@@ -36,7 +36,11 @@ def main():
             child=subprocess.Popen([str(exe),'--no-browser','--no-tray','--port',str(port),'--http-bind','127.0.0.1:0','--sdk-bind','127.0.0.1:0'],env=env,cwd=folder,stdout=subprocess.DEVNULL,stderr=subprocess.PIPE)
             def state():
                 with OPENER.open(base+'/control/state',timeout=2) as r:return json.load(r)
-            ready=wait(state)
+            try:ready=wait(state)
+            except AssertionError:
+                diagnostics=profile/'InkHub/logs/startup.log'
+                detail=diagnostics.read_text(encoding='utf-8') if diagnostics.exists() else 'no startup log'
+                raise AssertionError(f'installed app startup failed (exit={child.poll()}): {detail}')
             def post(path,body):
                 with OPENER.open(Request(base+path,data=json.dumps(body).encode(),headers={'content-type':'application/json','x-control-token':ready['token']}),timeout=10) as r:return json.load(r)
             post('/control/plugins/desk-note',{'op':'settings','data':{'title':'升级保留的用户便签','notes':'用户内容','theme':'浅色','refresh_seconds':30,'show_clock':True}})
