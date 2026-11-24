@@ -2,8 +2,8 @@
   "api_version": 1,
   "id": "desk-note",
   "name": "便签",
-  "version": "1.1.0",
-  "description": "管理多张便签，实时预览，逐张设置标题与字号。上下键翻阅，确认键切换明暗。",
+  "version": "1.2.0",
+  "description": "管理多张便签，自动保存、实时预览，逐张设置标题与字号。上下键翻阅，确认键切换明暗。",
   "entry": "main.py",
   "triggers": {
     "startup": true,

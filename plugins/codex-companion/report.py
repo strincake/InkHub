@@ -21,11 +21,16 @@ def write_event(inbox, event=None, *, source='agent', at=None, approval=None):
         if source in ('codex','demo'):
             raise ValueError('Reserved namespace')
         item={'kind':'agent','source':source,'event':event,'at':now if at is None else at}
+    return write_inbox_item(inbox, item)
+
+
+def write_inbox_item(inbox, item, prefix=''):
+    inbox=Path(inbox)
     payload=json.dumps(item,ensure_ascii=False,allow_nan=False).encode('utf-8')
     if len(payload)>8192:
         raise ValueError('Event exceeds 8 KiB')
     inbox.mkdir(parents=True,exist_ok=True)
-    name=uuid.uuid4().hex
+    name=prefix+uuid.uuid4().hex
     temp=inbox/(name+'.tmp')
     path=inbox/(name+'.json')
     try:

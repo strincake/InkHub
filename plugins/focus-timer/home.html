@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="zh-CN">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>专注计时</title>
+<style>
+ :root{color-scheme:light;--ink:#263651;--muted:#52617a;--panel:#fbfcff;--line:#dce3ee;--accent:#405da6;--text:#fff;font:15px/1.6 system-ui,"Microsoft YaHei",sans-serif}
+ :root[data-theme=dark]{color-scheme:dark;--ink:#e3eaf6;--muted:#b1bfd3;--panel:#263449;--line:#50637f;--accent:#a3baf7;--text:#17263e}
+ *{box-sizing:border-box}body{margin:0;padding:clamp(14px,3vw,28px);color:var(--ink)}main{max-width:700px;margin:auto}h1{font-size:24px;margin:0 0 14px}section{border:1px solid var(--line);border-radius:18px;background:var(--panel);padding:clamp(16px,5vw,36px)}p{margin:0;color:var(--muted)}
+ #time{display:block;font-size:clamp(4rem,15vw,6.5rem);line-height:1.12;font-variant-numeric:tabular-nums;letter-spacing:-.055em;padding:10px 0 20px}.actions{display:flex;flex-wrap:wrap;gap:8px}button{min-height:44px;border:1px solid var(--line);border-radius:12px;padding:8px 14px;font:inherit;background:var(--panel);color:var(--ink);cursor:pointer}button.primary{background:var(--accent);color:var(--text);border-color:transparent}button:disabled{opacity:.55;cursor:default}button:focus-visible{outline:2px solid var(--accent);outline-offset:3px}#message{margin-top:12px;min-height:24px}
+</style>
+<main>
+ <h1>专注计时</h1>
+ <section aria-label="计时操作">
+  <p id="phase">正在读取计时状态…</p>
+  <time id="time">--:--</time>
+  <div class="actions">
+   <button class="primary" data-action="start-focus" disabled>开始专注</button>
+   <button data-action="start-break" disabled>开始休息</button>
+   <button data-action="toggle" disabled>暂停</button>
+   <button data-action="reset" disabled>重置</button>
+  </div>
+  <p id="message" role="status"></p>
+ </section>
+</main>
+<script>
+const protocol='screen-plugin-ui-v1', phase=document.querySelector('#phase'), time=document.querySelector('#time');
+const message=document.querySelector('#message'),buttons=[...document.querySelectorAll('[data-action]')];
+let timer={}, settings={}, loaded=false, pending=null, sequence=0;
+function draw(){
+ const running=timer.mode==='running',paused=timer.mode==='paused';
+ const seconds=Math.max(0,Math.ceil(running?timer.deadline-Date.now()/1000:paused?timer.remaining:0));
+ const work=timer.phase==='focus'?'专注':'休息';
+ phase.textContent=loaded?(running||paused?work+(seconds===0?'结束':paused?'已暂停':'进行中'):
+    timer.mode==='done'?work+'结束':'就绪'):'正在读取计时状态…';
+ time.textContent=loaded?`${String(Math.floor(seconds/60)).padStart(2,'0')}:${String(seconds%60).padStart(2,'0')}`:'--:--';
+ buttons[0].textContent=settings.focus_minutes?`开始专注 · ${settings.focus_minutes} 分钟`:'开始专注';
+ buttons[1].textContent=settings.break_minutes?`开始休息 · ${settings.break_minutes} 分钟`:'开始休息';
+ buttons[2].textContent=paused?'继续':'暂停';
+ for(const button of buttons)button.disabled=!loaded||pending!==null;
+ buttons[2].disabled||=!(running||paused)||seconds===0;
+ buttons[3].disabled||=!timer.mode;
+}
+const send=(type,data={})=>parent.postMessage({protocol,type,...data},'*');
+addEventListener('message',event=>{
+ if(event.source!==parent||event.data?.protocol!==protocol)return;
+ const m=event.data;
+ if(m.appearance)document.documentElement.dataset.theme=m.appearance.resolved;
+ if(m.type==='context'){loaded=true;settings=m.settings??{}}
+ if(m.type==='context'||m.type==='state')timer=m.state?.timer??{};
+ if(m.type==='result'&&m.request_id===pending){pending=null;message.textContent=m.ok?'':m.error||'操作失败'}
+ draw();
+});
+for(const button of buttons)button.onclick=()=>{
+ pending='focus-'+(++sequence);send('run',{action:button.dataset.action,request_id:pending});draw();
+};
+new ResizeObserver(()=>send('resize',{height:document.body.getBoundingClientRect().height+12})).observe(document.body);
+setInterval(draw,1000);
+send('ready');
+</script>
+</html>

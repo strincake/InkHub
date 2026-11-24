@@ -7,12 +7,13 @@
 | [插件开发指南](guides/plugin-development.md) | 清单、事件、插件 API、独立主页和打包 |
 | [外部接入协议](guides/protocol.md) | HTTP v1、UDP 托管、认证、交图、回执和按键 |
 | [客户端说明](../clients/screen-scheduler-client/README.md) | Rust / Python 接入示例 |
-| [随附插件](../plugins/README.md) | 三个插件的源码位置、用途和统一打包方式 |
-| [Codex 工作搭子](../plugins/codex-companion/README.md) | 使用、任务状态、文件上报和提示音 |
+| [随附插件](../plugins/README.md) | 插件的用途、使用、打包与更新 |
+| [Agent 工作搭子](../plugins/codex-companion/README.md) | 使用、任务状态、框架接入和提示音 |
 | [本地相册](../plugins/local-gallery/README.md) | 多来源相册配置和轮播 |
 | [依赖管理](development/dependencies.md) | 固定 SDK 快照、客户端和依赖更新方法 |
 | [Windows 完整包验收](development/windows-release-verification.md) | 构建、安装、托盘、自启与测试边界 |
 | [Windows 安装与发布](development/windows-release-plan.md) | 安装器、托盘、自启、离线运行环境及 CI/草稿 Release |
+| [多平台构建与日常插件](development/multiplatform-and-plugins.md) | 构建产物、Linux 和 macOS 启动方式、插件更新范围 |
 | [测试说明](development/testing.md) | 测试分层、依赖、执行顺序和产物 |
 | [测试目录](../tests/README.md) | 单元、集成、浏览器、手动检查和模拟器的职责 |
 | [数据与版本管理边界](development/data-boundaries.md) | 应提交的源码与应排除的本机数据 |

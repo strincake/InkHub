@@ -1,4 +1,4 @@
-# Codex 工作搭子 · 墨枢 InkHub 插件
+# Agent 工作搭子 · 墨枢 InkHub 插件
 
 这是原 NOTE4 本地宠物的原生插件重写。只需 Python 标准库、Pillow 和墨枢 API 1；不依赖原宠物 exe、旧网页服务、Hub 或相邻源码目录。
 
@@ -7,7 +7,7 @@
 1. 先构建并运行本仓库当前版本的墨枢。提示音需要新增的 `ctx.play_wav` 宿主能力，不能使用迁移前的宿主二进制。
 2. 在仓库根目录打包：`python scripts/pack_plugin.py plugins/codex-companion dist/plugins/codex-companion.screen-plugin.zip`。
 3. 在插件中心安装 ZIP。安装默认不启用，不执行插件代码。
-4. 在插件中心启用插件后，打开左侧「Codex 工作搭子」主页，按需设置跟随目录、动画、过期阈值和提示音。
+4. 在插件中心启用插件后，打开左侧「工作搭子」主页，按需设置跟随目录、动画、过期阈值和提示音。
 5. 默认会话目录为当前用户的 `.codex/sessions`。宿主不会继承所有环境变量，非默认 CODEX_HOME 请在主页显式填写会话目录。
 6. 先使用墨枢模拟屏幕观察画面。真实设备连接、优先级、显示时长、灰阶、裁剪统一在宿主管理；不再提供插件自己的设备地址或首次推送勾选框。
 
@@ -32,7 +32,60 @@
 
 模拟屏幕的声音结果为 `simulated`，不代表设备发声。真实回执在总览的 `device.audio` 中；设备听感仍需实际观察。本次迁移不包含语音识别、TTS 或录音保存/上传。
 
-## 其他 Agent 上报
+## 接入 Claude Code、Gemini CLI 或 OpenCode 2
+
+启用工作搭子后，从主页复制**本机收件目录**和**生命周期适配脚本**的绝对路径。以下示例用 `/path/to/agent_hook.py` 和 `/path/to/inbox` 占位，将它们换成主页的实际值。Windows 可使用 JSON 中的正斜杠路径，例如 `C:/Users/Name/...`。把 `python3` 改为该 Agent 能找到的 Python 3 命令，也可使用完整可执行文件路径。合并这些条目到已有配置，保留其他 hooks 和插件。
+
+**Claude Code** 将下列条目合并到 `~/.claude/settings.json` 的 `hooks` 对象。项目内也可使用受信任的 `.claude/settings.local.json`。适配脚本会报告开始、权限等待、工具返回、完成、出错及退出。 [Claude Code Hooks 文档](https://code.claude.com/docs/en/hooks)
+
+```json
+{
+  "hooks": {
+    "UserPromptSubmit": [{"hooks": [{"type": "command", "command": "python3 \"/path/to/agent_hook.py\" --source claude-code --inbox \"/path/to/inbox\""}]}],
+    "PermissionRequest": [{"hooks": [{"type": "command", "command": "python3 \"/path/to/agent_hook.py\" --source claude-code --inbox \"/path/to/inbox\""}]}],
+    "PostToolUse": [{"hooks": [{"type": "command", "command": "python3 \"/path/to/agent_hook.py\" --source claude-code --inbox \"/path/to/inbox\""}]}],
+    "PostToolUseFailure": [{"hooks": [{"type": "command", "command": "python3 \"/path/to/agent_hook.py\" --source claude-code --inbox \"/path/to/inbox\""}]}],
+    "Stop": [{"hooks": [{"type": "command", "command": "python3 \"/path/to/agent_hook.py\" --source claude-code --inbox \"/path/to/inbox\""}]}],
+    "StopFailure": [{"hooks": [{"type": "command", "command": "python3 \"/path/to/agent_hook.py\" --source claude-code --inbox \"/path/to/inbox\""}]}],
+    "SessionEnd": [{"hooks": [{"type": "command", "command": "python3 \"/path/to/agent_hook.py\" --source claude-code --inbox \"/path/to/inbox\""}]}]
+  }
+}
+```
+
+**Gemini CLI** 将下列条目合并到 `~/.gemini/settings.json` 的 `hooks` 对象。若使用项目配置，则放入受信任的 `.gemini/settings.json`。支持开始、权限等待、工具返回、完成和尽力记录退出。 [Gemini CLI Hooks 文档](https://geminicli.com/docs/hooks/reference/)
+
+```json
+{
+  "hooks": {
+    "BeforeAgent": [{"hooks": [{"name": "inkhub", "type": "command", "command": "python3 \"/path/to/agent_hook.py\" --source gemini-cli --inbox \"/path/to/inbox\""}]}],
+    "Notification": [{"hooks": [{"name": "inkhub", "type": "command", "command": "python3 \"/path/to/agent_hook.py\" --source gemini-cli --inbox \"/path/to/inbox\""}]}],
+    "AfterTool": [{"hooks": [{"name": "inkhub", "type": "command", "command": "python3 \"/path/to/agent_hook.py\" --source gemini-cli --inbox \"/path/to/inbox\""}]}],
+    "AfterAgent": [{"hooks": [{"name": "inkhub", "type": "command", "command": "python3 \"/path/to/agent_hook.py\" --source gemini-cli --inbox \"/path/to/inbox\""}]}],
+    "SessionEnd": [{"hooks": [{"name": "inkhub", "type": "command", "command": "python3 \"/path/to/agent_hook.py\" --source gemini-cli --inbox \"/path/to/inbox\""}]}]
+  }
+}
+```
+
+**OpenCode 2** 将下列条目加到 `opencode.json(c)` 的 `plugins` 数组。将 `package` 指向适配脚本旁边的 `opencode-v2` 目录。OpenCode 服务与墨枢必须能访问同一个本机目录。 [OpenCode 服务端插件文档](https://opencode.ai/docs/build/plugins/server/)
+
+```json
+{
+  "plugins": [
+    {
+      "package": "/path/to/opencode-v2",
+      "options": {
+        "bridge": "/path/to/agent_hook.py",
+        "inbox": "/path/to/inbox",
+        "python": "python3"
+      }
+    }
+  ]
+}
+```
+
+重新打开对应 Agent，提交一条任务，观察工作搭子的实时任务列表。适配器仅写入会话标识哈希、时间和生命周期状态，审批仍在对应 Agent 中处理。超过过期阈值未收到事件的活动会话显示为“状态待确认”。旧版 OpenCode 或没有对应 hook 的框架可使用下方通用入口。
+
+## 通用 Agent 上报
 
 先启用插件，在主页复制「本机收件目录」。示例路径仅占位，需换成主页显示的实际值：
 

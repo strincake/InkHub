@@ -6,6 +6,7 @@ from urllib.request import Request,build_opener,ProxyHandler
 from PIL import Image
 ROOT=Path(__file__).resolve().parents[2]
 VERSION=tomllib.loads((ROOT/'Cargo.toml').read_text(encoding='utf-8'))['package']['version']
+IDS=set((ROOT/'packaging/builtin-plugins.txt').read_text(encoding='utf-8').splitlines())
 OPENER=build_opener(ProxyHandler({}))
 RUN=r'Software\Microsoft\Windows\CurrentVersion\Run'
 def wait(fn,seconds=20):
@@ -43,7 +44,7 @@ def main():
         try:
             child=start();ready=wait(state)
             assert ready['application']['packaged'] and ready['application']['autostart_supported']
-            assert {p['id'] for p in ready['plugins']}=={'desk-note','local-gallery','codex-companion'}
+            assert {p['id'] for p in ready['plugins']}==IDS
             assert all(not p['enabled'] and p['last_run'] is None for p in ready['plugins'])
             assert (profile/'InkHub/settings.json').is_file()
             assert not (app.parent/'settings.json').exists()
@@ -70,7 +71,7 @@ def main():
             checks.append('autostart_settings_write_and_remove_current_user_run_entry')
             plugin('desk-note','disable');plugin('local-gallery','uninstall');stop()
             child=start();ready=wait(state)
-            assert {p['id'] for p in ready['plugins']}=={'desk-note','codex-companion'}
+            assert {p['id'] for p in ready['plugins']}==IDS-{'local-gallery'}
             assert all(not p['enabled'] for p in ready['plugins'])
             checks.append('restart_preserves_user_plugin_choices')
             stop()

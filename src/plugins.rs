@@ -253,6 +253,8 @@ async fn python_cancellable(
             matches!(
                 key.to_string_lossy().to_ascii_uppercase().as_str(),
                 "PATH"
+                    | "HOME"
+                    | "TMPDIR"
                     | "SYSTEMROOT"
                     | "WINDIR"
                     | "USERPROFILE"
@@ -1000,21 +1002,33 @@ pub async fn control(
             )
             .map_err(bad)?;
         }
-        "settings" => {
-            let fields = a
-                .plugins
-                .lock()
-                .await
-                .items
-                .get(&id)
-                .ok_or_else(|| bad("插件不存在"))?
-                .manifest["settings"]
-                .clone();
-            let raw=python(vec![script("plugin_tools.py").to_string_lossy().into(),"validate-settings".into()],serde_json::to_vec(&json!({"fields":fields.as_array().cloned().unwrap_or_default(),"values":c.data})).unwrap(),65536,5).await.map_err(bad)?;
+        "settings" | "patch_settings" => {
+            let (fields, values) = {
+                let m = a.plugins.lock().await;
+                let p = m.items.get(&id).ok_or_else(|| bad("插件不存在"))?;
+                let values = if c.op == "patch_settings" {
+                    let mut values = p.disk.settings.as_object().cloned().unwrap_or_default();
+                    values.extend(c.data.as_object().ok_or_else(|| bad("插件设置必须是对象"))?.clone());
+                    Value::Object(values)
+                } else {
+                    c.data
+                };
+                (p.manifest["settings"].as_array().cloned().unwrap_or_default(), values)
+            };
+            let raw = python(
+                vec![script("plugin_tools.py").to_string_lossy().into(), "validate-settings".into()],
+                serde_json::to_vec(&json!({"fields":fields,"values":values})).unwrap(),
+                65536,
+                5,
+            ).await.map_err(bad)?;
             let settings: Value = serde_json::from_slice(&raw).map_err(bad)?;
             let mut m = a.plugins.lock().await;
+            let previous = std::mem::replace(&mut m.items.get_mut(&id).unwrap().disk.settings, settings);
+            if let Err(error) = m.save(&id) {
+                m.items.get_mut(&id).unwrap().disk.settings = previous;
+                return Err(bad(error));
+            }
             let p = m.items.get_mut(&id).unwrap();
-            p.disk.settings = settings;
             p.epoch += 1;
             p.cancel.notify_one();
             p.cancel = Arc::new(Notify::new());
@@ -1023,7 +1037,6 @@ pub async fn control(
             if p.disk.enabled {
                 p.events.push_back(json!({"type":"settings_changed"}));
             }
-            m.save(&id).map_err(bad)?;
         }
         "uninstall" => {
             set_enabled(a.clone(), &id, false).await.map_err(bad)?;

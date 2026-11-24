@@ -51,16 +51,20 @@
 ![插件设置页](docs/images/插件设置页.png)
 *插件内嵌设置页*
 
-项目目前内置了三个插件，你可以按需启用和卸载：
+项目随附六个插件，可按需启用和卸载：
 
-1. **Codex 工作搭子**：[zectrix-agent-pet](https://github.com/itopinion/zectrix-agent-pet) 的 InkHub 插件重写版本，仅复刻功能，未使用原有代码。
+1. **Agent 工作搭子**：跟随本机 Codex，也可接入 Claude Code、Gemini CLI 和 OpenCode 2 的任务事件。
 2. **本地文件夹相册轮播**：支持选取多个文件夹，并将每个文件夹作为单独通道管理。
-3. **桌面便签与时钟**：一个简易的示例便签程序。
+3. **便签**：多张便签、实时预览和自动保存。
+4. **桌面天气**：当前天气、今日高低温和降水概率，支持离线缓存。
+5. **专注计时**：专注与休息倒计时。
+6. **今日清单**：每日重复事项，支持设备按键勾选。
+
+使用与更新方法见[随附插件](plugins/README.md)。
 
 ## 怎么使用
 
-该项目目前仅编译了 Windows 端，你可以通过 [GitHub Releases](https://github.com/strincake/screen-scheduler/releases) 进行下载；程序运行后会在托盘驻留，并使用浏览器网页作为前端展示。
-其他平台如想使用需自行编译，请参考后续的章节。
+GitHub Actions 为 Windows x64、Linux x64、macOS Intel 和 Apple Silicon 构建。已发布版本在 [GitHub Releases](https://github.com/strincake/InkHub/releases)，分支构建产物在 [GitHub Actions](https://github.com/strincake/InkHub/actions)。Windows 安装版驻留系统托盘。Linux 和 macOS 运行包需要安装 Python 和 Pillow，见[多平台构建与日常插件](docs/development/multiplatform-and-plugins.md)。
 
 ## 当前局限
 
@@ -81,14 +85,14 @@
 - **设备管理**：每个通道支持单独设置黑白、四灰、十六灰输出，并针对每个来源单独进行设备显示回执，按键回传。
 - **插件中心**：通过 ZIP 安装、启用、配置和卸载本地插件；插件可提供独立主页，并按需要使用宿主设置表单。
 - **本地相册**：一个插件管理多个文件夹来源，支持固定图片、顺序/随机轮播、留边/裁剪及屏幕按键翻图。
-- **Codex 工作搭子**：跟随本机任务状态，显示像素角色、任务分页和可选提示音；其他 Agent 可通过本机文件上报状态。
+- **Agent 工作搭子**：跟随本机任务状态，显示像素角色、任务分页和可选提示音。接入方法见[工作搭子](plugins/codex-companion/README.md)。
 - **支持外部程序接入**：HTTP v1 与原 SDK 的 UDP 托管入口，支持绑定画面的最长 3 秒提示音，附 Rust / Python HTTP 客户端和示例。
 
 ## Windows 安装版
 
 正式发布时通过 GitHub Release 提供安装包（私有仓库需要读取权限）；当前本机生成结果在 `dist/releases/`。安装版自带 Python、Pillow 与中文字体，普通用户无需编译或配置开发环境。
 
-启动后驻留右下角托盘，可查看运行状态、打开管理界面或正常退出。关闭网页后仍继续运行。首次已安装三个插件，全部默认禁用。
+启动后驻留右下角托盘，可查看运行状态、打开管理界面或正常退出。关闭网页后仍继续运行。随附插件首次安装时默认禁用。
 
 “连接与切换 → 软件设置”提供**随 Windows 启动**开关，默认关闭；开启后登录 Windows 时仅驻留托盘，不自动弹出网页。设置与插件数据保存在 `%LOCALAPPDATA%/InkHub/`，升级或卸载时保留。
 
@@ -133,7 +137,7 @@ Pillow 版本固定为本次整理时使用的版本；Rust 的依赖版本由�
 ./start.ps1 -Build
 ```
 
-正式优化构建使用 `./build.ps1 -Release`，随后运行 `./start.ps1 -Release`。脚本将构建产物统一放在本项目的 `target/` 下。Release 构建会自动将三个内置插件打包并嵌入 EXE；首次启动自动安装缺失的内置插件，全部默认禁用，不执行插件代码。已有同 ID 插件不会覆盖，后续禁用或卸载也不会被重启撤销。开发构建保持原有的手动安装方式。
+正式优化构建使用 `./build.ps1 -Release`，随后运行 `./start.ps1 -Release`。脚本将产物放在 `target/` 下。Release 构建会随附插件，首次提供的插件默认禁用。已有同 ID 插件按用户选择保留，升级插件使用插件中心的 ZIP 更新入口。
 
 打开管理界面：[127.0.0.1:38476](http://127.0.0.1:38476)。网页关闭后服务仍会运行；在侧栏点击“退出墨枢”才能正常释放设备并结束服务。已有旧实例时，请先从旧网页退出，再启动本目录中的实例。
 
@@ -150,9 +154,9 @@ Pillow 版本固定为本次整理时使用的版本；Rust 的依赖版本由�
 ## 第一次使用
 
 1. 启动后先在模拟屏幕中检查队列和画面。
-2. Release 版本已自动准备三个内置插件，可直接在插件中心按需启用。
+2. Release 版本已自动准备随附插件，可在插件中心按需启用。
 3. 开发构建或需要单独分享插件时，运行 `./pack-plugins.ps1`，再从插件中心安装 `dist/plugins/` 中的 ZIP；手动安装也默认禁用。
-4. 本地相册从左侧插件主页添加文件夹来源；便签与 Codex 工作搭子也通过各自主页操作。
+4. 本地相册、便签、工作搭子和专注计时可从各自的左侧主页操作。
 5. 需要使用实体 NOTE4 时，先退出其他占用设备的程序，在“我的 NOTE4”中填写设备地址并主动连接。
 6. 对每个内容来源设置优先级和显示规则。
 
@@ -173,10 +177,13 @@ screen-scheduler/
 ├─ src/                            Rust 宿主、调度、设备与插件管理
 ├─ web/                            中文管理界面（构建时嵌入宿主）
 ├─ python/                         Python worker、安装/迁移工具与 plugin_kit API
-├─ plugins/                        三个随附插件的源码、主页和说明
+├─ plugins/                        随附插件的源码、主页和说明
 │  ├─ desk-note/                   桌面便签与时钟
 │  ├─ local-gallery/               本地相册
-│  └─ codex-companion/             Codex 工作搭子
+│  ├─ codex-companion/             Agent 工作搭子
+│  ├─ desk-weather/                桌面天气
+│  ├─ focus-timer/                  专注计时
+│  └─ today-checklist/              今日清单
 ├─ clients/screen-scheduler-client/ Rust / Python HTTP 客户端及示例
 ├─ vendor/zectrix-local-push-sdk/   固定的设备 SDK 源码快照与许可证
 ├─ tests/                          Rust、Python、浏览器测试及本机模拟器
@@ -211,7 +218,7 @@ Windows 安装、用户数据、自启、打包及草稿 Release 流程见[Windo
 
 ## 当前边界
 
-- Windows 完整包提供系统托盘和可选自启；其他平台安装包尚未验证。当前 Windows 安装包未签名。
+- Windows 安装包提供系统托盘和可选自启。Linux 和 macOS 通过终端启动，使用浏览器操作。当前 Windows 安装包未签名。
 - SDK 的 `Busy`、`ResultUnknown` 等失败会暂停发送；用户处理后明确继续，不自动重放未知结果。
 - 提示音由插件提交、宿主统一播放，默认关闭；录音内容不保存或上传。HTTP/UDP 外部来源目前支持音频。
 - 插件是有本机权限的 Python 代码；网页 iframe 的隔离不能把 Python 插件变成安全沙箱。

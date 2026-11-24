@@ -235,6 +235,8 @@ parent.postMessage({protocol:'screen-plugin-ui-v1', type:'ready'}, '*');
 
 子页面可发送：ready / get_settings、save_settings（完整设置对象）、run（action，默认 refresh）。父页面返回 context（此插件自己的信息、设置、state 和启用状态）或 result（request_id、ok、error）。运行完成后还会推送 state 消息，包含这个插件自己的最新 state；适合刷新相册文件列表等只读视图，不应因此重置用户尚未保存的表单。目标来源由宿主绑定的独立 iframe 决定，子页面不能用消息里的 ID 操作其他插件。对不透明 sandbox origin 发送消息需要 `'*'`；双方仍应校验 message source。保存设置会触发已启用插件生成新图，无需另发 run。
 
+墨枢 0.1.2 起，若 `context.autosave_settings === true`，主页可发送 `autosave_settings`。`settings` 只需包含本次修改的字段，宿主会在校验前合并最新已保存设置。默认合并约 400 毫秒内的连续编辑，连续修改同一字段时以最后一次为准。点击立即保存时可传 `immediate: true`。切出插件主页会立即提交待保存内容。同一批次的 `result` 使用最后一条消息的 `request_id`。旧宿主可以延时后发送原有的 `save_settings`。
+
 ## 7. 安装、分享与状态保存
 
 ZIP 最多 10 MiB，解压总量最多 16 MiB、单文件最多 8 MiB、成员最多 256 个。拒绝路径越界、绝对路径、盘符、反斜线、Windows 保留文件名、重名文件、链接和异常压缩比例。没有插件自动安装脚本。

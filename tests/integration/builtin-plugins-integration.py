@@ -4,8 +4,8 @@ from pathlib import Path
 from urllib.request import Request,build_opener,ProxyHandler
 ROOT=Path(__file__).resolve().parents[2]
 TEMP=ROOT/'artifacts/tmp';TEMP.mkdir(parents=True,exist_ok=True)
-BINARY=Path(os.environ.get('SCHEDULER_BINARY',str(ROOT/'target/release/note4-screen-scheduler.exe')))
-IDS={'desk-note','local-gallery','codex-companion'}
+BINARY=Path(os.environ.get('SCHEDULER_BINARY',str(ROOT/'target/release'/('note4-screen-scheduler.exe' if os.name=='nt' else 'note4-screen-scheduler'))))
+IDS=set((ROOT/'packaging/builtin-plugins.txt').read_text(encoding='utf-8').splitlines())
 OPENER=build_opener(ProxyHandler({}))
 def wait(fn):
     deadline=time.monotonic()+20
@@ -19,7 +19,7 @@ def wait(fn):
 def run(config,check):
     with socket.socket() as s:s.bind(('127.0.0.1',0));port=s.getsockname()[1]
     base=f'http://127.0.0.1:{port}'
-    child=subprocess.Popen([str(BINARY),'--port',str(port),'--config',str(config),'--http-bind','127.0.0.1:0','--sdk-bind','127.0.0.1:0'],stdout=subprocess.DEVNULL,stderr=subprocess.PIPE)
+    child=subprocess.Popen([str(BINARY),'--no-browser','--no-tray','--port',str(port),'--config',str(config),'--http-bind','127.0.0.1:0','--sdk-bind','127.0.0.1:0'],stdout=subprocess.DEVNULL,stderr=subprocess.PIPE)
     def state():
         with OPENER.open(base+'/control/state',timeout=3) as r:return json.load(r)
     def command(id,op):
@@ -46,7 +46,7 @@ def main():
             assert set(plugins)==IDS,sorted(plugins)
             assert all(not p['enabled'] and p['last_run'] is None for p in plugins.values())
             assert ready['sources']==[] and ready['current'] is None
-        run(config,fresh);checks.append('fresh_release_installs_three_builtins_disabled_without_executing')
+        run(config,fresh);checks.append('fresh_release_installs_builtins_disabled_without_executing')
         def user_edit(state,command,ready):
             command('desk-note','enable');wait(lambda:next(p for p in state()['plugins'] if p['id']=='desk-note')['last_run'] is not None)
             command('desk-note','disable');command('local-gallery','uninstall')
@@ -60,14 +60,17 @@ def main():
     with tempfile.TemporaryDirectory(prefix='builtin-existing-',dir=TEMP) as folder:
         config=Path(folder)/'settings.json';package=config.with_suffix('.plugins')/'packages/desk-note'
         shutil.copytree(ROOT/'plugins/desk-note',package)
+        marker=package.parents[1]/'builtin-plugins.initialized.json'
+        marker.write_text(json.dumps({'schema':1,'plugins':['desk-note','local-gallery','codex-companion']}),encoding='utf-8')
         manifest=json.loads((package/'plugin.json').read_text(encoding='utf-8'));manifest['name']='用户保留便签';manifest['version']='9.9.9'
         (package/'plugin.json').write_text(json.dumps(manifest,ensure_ascii=False),encoding='utf-8')
         def existing(state,command,ready):
-            plugins={p['id']:p for p in ready['plugins']};assert set(plugins)==IDS
+            plugins={p['id']:p for p in ready['plugins']};assert set(plugins)==IDS-{'local-gallery','codex-companion'}
             assert plugins['desk-note']['manifest']['name']=='用户保留便签'
             assert plugins['desk-note']['manifest']['version']=='9.9.9'
             assert all(not p['enabled'] for p in plugins.values())
-        run(config,existing);checks.append('first_bootstrap_preserves_existing_same_id_package')
+        run(config,existing);run(config,existing)
+        checks.append('upgrade_adds_new_builtins_without_replacing_or_reinstalling_old_ones')
     result={'passed':len(checks),'checks':checks,'physical_device_tested':False}
     out=ROOT/'artifacts/tests/integration';out.mkdir(parents=True,exist_ok=True)
     (out/'builtin-plugins-result.json').write_text(json.dumps(result,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')

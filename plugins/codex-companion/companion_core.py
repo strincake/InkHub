@@ -14,6 +14,7 @@ import uuid
 LABELS = {'working': '正在工作', 'waiting': '等你处理', 'done': '任务完成',
           'error': '遇到问题', 'stopped': '已停止', 'unknown': '状态待确认'}
 TERMINAL = frozenset(('done', 'error', 'stopped'))
+HOOK_AGENTS = {'claude-code': 'Claude Code', 'gemini-cli': 'Gemini CLI', 'opencode': 'OpenCode'}
 TASKS_PER_PAGE = 4
 DEFAULT_SETTINGS = dict(codex_enabled=True, animation=True, stale_minutes=15,
                         sound_enabled=False, volume=90, sessions_path='', poll_seconds=3)
@@ -155,14 +156,39 @@ class Model:
             task['stale'] = self.now - task['updated_at'] > self.settings['stale_minutes'] * 60
         return tasks
 
+    def apply_lifecycle(self, item):
+        source, thread, action, seq, at = (item[key] for key in ('source', 'thread', 'action', 'seq', 'at'))
+        if source not in HOOK_AGENTS or not _id(thread) or type(seq) is not int or not 0 < seq < 2**64:
+            raise ValueError('Invalid hook event identity')
+        if not _number(at) or not 0 <= at <= self.now + 10:
+            raise ValueError('Invalid hook event time')
+        status = {'start': 'working', 'active': 'working', 'wait': 'waiting',
+                  'done': 'done', 'error': 'error', 'stop': 'stopped'}.get(action)
+        if status is None:
+            raise ValueError('Invalid hook event action')
+        latest = next((t for t in self.tasks if t['source'] == source and t['event'].get('thread_id') == thread), None)
+        if latest and seq <= latest['event']['seq']:
+            return False
+        active = latest and latest['event']['status'] not in TERMINAL
+        if action in ('active', 'done', 'error', 'stop') and not active:
+            return False
+        if active:
+            task_id = latest['event']['task_id']
+        else:
+            task_id = f'{thread}-{seq}'
+        name = HOOK_AGENTS[source]
+        return self.apply(dict(task_id=task_id, thread_id=thread, seq=seq, status=status, title=name + ' 任务',
+                               detail='权限审批' if action == 'wait' else '', agent=name), source, at)
+
     def live(self):
         result, seen = [], set()
         for task in self.visible():
             thread = task['event'].get('thread_id')
-            if task['source'] == 'codex' and thread:
-                if thread in seen:
+            if task['source'] in ('codex', *HOOK_AGENTS) and thread:
+                key = (task['source'], thread)
+                if key in seen:
                     continue
-                seen.add(thread)
+                seen.add(key)
             result.append(task)
         return result
 
@@ -445,6 +471,8 @@ def ingest_inbox(inbox: Path, model: Model, now: float):
             raw=path.read_bytes(); item=_parse(raw)
             if item.get('kind')=='approval' and set(item)=={'kind','signal'}:
                 changed=model.apply_approval(item['signal'])
+            elif item.get('kind')=='lifecycle' and set(item)=={'kind','source','thread','action','seq','at'}:
+                changed=model.apply_lifecycle(item)
             elif item.get('kind')=='agent' and set(item) <= {'kind','event','source','at'}:
                 source=item.get('source','agent')
                 if source in ('codex','demo'):

@@ -16,11 +16,13 @@ impl Layout {
         self.root.join("python").join(name)
     }
     pub fn python(&self) -> PathBuf {
+        #[cfg(windows)]
         if self.packaged() {
-            self.root.join("runtime/python/python.exe")
-        } else {
-            PathBuf::from("python")
+            return self.root.join("runtime/python/python.exe");
         }
+        std::env::var_os("INKHUB_PYTHON")
+            .map(PathBuf::from)
+            .unwrap_or_else(|| PathBuf::from(if cfg!(windows) { "python" } else { "python3" }))
     }
     pub fn config(&self) -> PathBuf {
         self.user
@@ -37,18 +39,24 @@ pub fn layout() -> &'static Layout {
             .and_then(|p| p.parent().map(|p| p.to_path_buf()))
             .unwrap_or_default();
         if folder.join("runtime-layout.json").is_file() {
-            Layout::new(
-                folder,
-                Some(
-                    std::env::var_os("LOCALAPPDATA")
-                        .map(PathBuf::from)
-                        .unwrap_or_else(std::env::temp_dir),
-                ),
-            )
+            Layout::new(folder, Some(user_data_parent()))
         } else {
             Layout::new(PathBuf::from(env!("CARGO_MANIFEST_DIR")), None)
         }
     })
+}
+fn user_data_parent() -> PathBuf {
+    #[cfg(windows)]
+    let directory = std::env::var_os("LOCALAPPDATA").map(PathBuf::from);
+    #[cfg(target_os = "macos")]
+    let directory = std::env::var_os("HOME")
+        .map(|home| PathBuf::from(home).join("Library/Application Support"));
+    #[cfg(all(not(windows), not(target_os = "macos")))]
+    let directory = std::env::var_os("XDG_CONFIG_HOME")
+        .map(PathBuf::from)
+        .filter(|path| path.is_absolute())
+        .or_else(|| std::env::var_os("HOME").map(|home| PathBuf::from(home).join(".config")));
+    directory.unwrap_or_else(std::env::temp_dir)
 }
 pub fn flag(name: &str) -> bool {
     std::env::args().any(|arg| arg == name)
@@ -78,7 +86,8 @@ pub fn open_browser(url: &str) {
     }
     #[cfg(not(windows))]
     {
-        let _ = std::process::Command::new("xdg-open").arg(url).spawn();
+        let program = if cfg!(target_os = "macos") { "open" } else { "xdg-open" };
+        let _ = std::process::Command::new(program).arg(url).spawn();
     }
 }
 pub fn autostart_supported() -> bool {
@@ -124,6 +133,8 @@ pub fn set_autostart(enabled: bool) -> Result<(), String> {
     if !autostart_supported() {
         return Err("开机自启仅在 Windows 安装版中可用".into());
     }
+    #[cfg(not(windows))]
+    let _ = enabled;
     #[cfg(windows)]
     unsafe {
         use windows_sys::Win32::System::Registry::*;
@@ -216,6 +227,7 @@ mod tests {
             layout.script("plugin_worker.py"),
             PathBuf::from("app/python/plugin_worker.py")
         );
+        #[cfg(windows)]
         assert_eq!(
             layout.python(),
             PathBuf::from("app/runtime/python/python.exe")
@@ -225,7 +237,6 @@ mod tests {
     #[test]
     fn developer_layout_keeps_source_configuration() {
         let layout = Layout::new(PathBuf::from("source"), None);
-        assert_eq!(layout.python(), PathBuf::from("python"));
         assert_eq!(layout.config(), PathBuf::from("source/settings.json"));
     }
 }

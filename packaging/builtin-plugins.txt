@@ -1,0 +1,6 @@
+desk-note
+local-gallery
+codex-companion
+desk-weather
+focus-timer
+today-checklist

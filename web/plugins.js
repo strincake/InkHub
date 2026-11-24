@@ -16,7 +16,7 @@ export function mountPlugins({getState,refresh,onView,toast,editSource,command})
  const workspace=document.createElement('section');workspace.id='plugin-home-view';workspace.hidden=true;workspace.innerHTML='<iframe id="plugin-frame" title="插件主页" sandbox="allow-scripts"></iframe>';$('main footer').before(workspace);
  const dialogs=document.createElement('div');dialogs.innerHTML=`<dialog id="plugin-install"><form id="plugin-install-form"><div class="dialog-title"><h2>安装或更新本地插件</h2><button type="button" class="close" data-plugin-close="plugin-install">×</button></div><label class="field">选择插件 ZIP<input id="plugin-file" type="file" accept=".zip" required></label><p class="hint">插件包根目录应包含 plugin.json，最大 10 MiB。新插件默认禁用；同 ID 插件会替换代码包，保留数据与启用状态。</p><p id="plugin-package-preview" class="hint" role="status" aria-live="polite">选择 ZIP 后自动校验并识别新增或更新。</p><label class="check-row"><input id="plugin-trust" type="checkbox" required>我信任这个插件的来源，了解启用后会运行本机代码</label><div class="dialog-actions"><button type="submit" class="primary" disabled>请先选择插件包</button></div></form></dialog><dialog id="plugin-settings"><div class="dialog-title"><div><p class="eyebrow">PLUGIN SETTINGS</p><h2 id="plugin-settings-title">插件设置</h2></div><button class="close" data-plugin-close="plugin-settings">×</button></div><form id="plugin-settings-form"><div id="plugin-fields"></div><div class="dialog-actions"><button type="submit" class="primary">保存插件设置</button></div></form></dialog><dialog id="plugin-uninstall"><div class="dialog-title"><h2>卸载这个插件？</h2><button class="close" data-plugin-close="plugin-uninstall">×</button></div><p class="hint">会停止插件、撤销显示任务，并删除这个插件的设置和私有数据。导出的 ZIP 不包含这些个人数据。</p><div class="dialog-actions"><button id="plugin-uninstall-confirm" class="primary">卸载并删除插件数据</button></div></dialog>`;document.body.append(dialogs);
  const wrap=f=>async e=>{try{await f(e)}catch(error){toast(error.message)}};
- async function api(id,op,data={}){const r=await fetch('/control/plugins/'+encodeURIComponent(id),{method:'POST',headers:{'content-type':'application/json','x-control-token':getState().token},body:JSON.stringify({op,data})});if(!r.ok)throw Error(await r.text());await refresh();return r.json()}
+ async function api(id,op,data={}){const r=await fetch('/control/plugins/'+encodeURIComponent(id),{method:'POST',headers:{'content-type':'application/json','x-control-token':getState().token},body:JSON.stringify({op,data}),keepalive:op==='patch_settings'});if(!r.ok)throw Error(await r.text());await refresh();return r.json()}
  const plugin=id=>getState().plugins.find(p=>p.id===id);
  let last='',lastNav='',selected='',uninstall='',bridge=null,lastBridgeRun=null,lastEnabled=null,activeHome='';
  const homepage=p=>p.manifest.homepage??p.manifest.settings_page;
@@ -24,9 +24,49 @@ export function mountPlugins({getState,refresh,onView,toast,editSource,command})
  function field(f,value){const key=esc(f.key),label=esc(f.label);let input;if(f.type==='boolean')return `<label class="check-row"><input type="checkbox" name="${key}" ${value?'checked':''}>${label}</label>`;if(f.type==='textarea')input=`<textarea name="${key}" rows="4" maxlength="4096">${esc(value)}</textarea>`;else if(f.type==='select')input=`<select name="${key}">${f.options.map(o=>`<option value="${esc(o)}" ${o===value?'selected':''}>${esc(o)}</option>`).join('')}</select>`;else input=`<input name="${key}" type="${f.type==='number'?'number':f.type==='password'?'password':'text'}" value="${esc(value)}" ${f.type==='number'?`step="any" ${f.min!==undefined?`min="${f.min}"`:''} ${f.max!==undefined?`max="${f.max}"`:''}`:'maxlength="4096"'}>`;return `<label class="field">${label}${input}</label>`;}
  function settings(id){selected=id;const p=plugin(id);$('#plugin-settings-title').textContent=p.manifest.name;$('#plugin-fields').innerHTML=hostFields(p).map(f=>field(f,p.settings[f.key])).join('');$('#plugin-settings').showModal();}
  function reply(message){$('#plugin-frame').contentWindow?.postMessage({protocol:'screen-plugin-ui-v1',...message},'*')}
- function context(){const p=plugin(bridge);if(p){reply({type:'context',plugin:{id:p.id,name:p.manifest.name,version:p.manifest.version},settings:p.settings,state:p.state,enabled:p.enabled,appearance:{mode:document.querySelector('#appearance-mode').value,resolved:document.documentElement.dataset.theme}});lastBridgeRun=p.last_run;lastEnabled=p.enabled}}
+ const autosaves=new Map();
+ function context(){const p=plugin(bridge);if(p){
+  const slot=autosaves.get(bridge),draft=slot?.pending??slot?.writing;
+  reply({type:'context',plugin:{id:p.id,name:p.manifest.name,version:p.manifest.version},settings:{...p.settings,...draft?.values},autosave_settings:true,autosave_pending:!!draft,state:p.state,enabled:p.enabled,appearance:{mode:document.querySelector('#appearance-mode').value,resolved:document.documentElement.dataset.theme}});lastBridgeRun=p.last_run;lastEnabled=p.enabled;
+ }}
+ function acknowledge(id,request,ok,error){
+  if(bridge===id&&request.frame===$('#plugin-frame'))reply({type:'result',request_id:request.requestId,ok,error});
+  else if(!ok)toast('自动保存失败 · '+error);
+ }
+ async function flushAutosave(id){
+  const slot=autosaves.get(id);
+  if(!slot)return;
+  clearTimeout(slot.timer);slot.timer=null;
+  if(slot.writing||!slot.pending)return;
+  const request=slot.pending;
+  slot.pending=null;slot.writing=request;
+  try{await api(id,'patch_settings',request.values);acknowledge(id,request,true)}
+  catch(error){acknowledge(id,request,false,error.message)}
+  finally{
+   slot.writing=null;
+   if(!slot.pending)autosaves.delete(id);
+   else if(!slot.timer)void flushAutosave(id);
+  }
+ }
+ function queueAutosave(id,frame,message){
+  const requestId=String(message.request_id??'').slice(0,80);
+  const values=message.settings;
+  if(!values||typeof values!=='object'||Array.isArray(values)){
+   acknowledge(id,{frame,requestId},false,'插件设置必须是对象');return;
+  }
+  const slot=autosaves.get(id)??{pending:null,writing:null,timer:null};
+  autosaves.set(id,slot);
+  const prior=slot.pending;
+  slot.pending={frame,requestId,values:{...prior?.values,...values}};
+  clearTimeout(slot.timer);
+  if(message.immediate)void flushAutosave(id);
+  else slot.timer=setTimeout(()=>void flushAutosave(id),400);
+ }
+ function flushAll(){for(const id of autosaves.keys())void flushAutosave(id)}
+ addEventListener('pagehide',flushAll);
+ document.addEventListener('visibilitychange',()=>{if(document.hidden)flushAll()});
  addEventListener('scheduler-theme',event=>{if(bridge&&!workspace.hidden)reply({type:'appearance',appearance:event.detail})});
- function leave(){bridge=null;activeHome='';$('#plugin-frame').removeAttribute('src');}
+ function leave(){if(bridge)void flushAutosave(bridge);bridge=null;activeHome='';$('#plugin-frame').removeAttribute('src');}
  function activate(name){
   const id=name.startsWith('plugin:')?name.slice(7):'',p=id?plugin(id):null;
   if(!p||!p.enabled||!homepage(p)){leave();workspace.hidden=true;return null;}
@@ -35,7 +75,7 @@ export function mountPlugins({getState,refresh,onView,toast,editSource,command})
   return p;
  }
  homes.onclick=e=>{const button=e.target.closest('[data-view]');if(button)onView(button.dataset.view)};
- addEventListener('message',wrap(async event=>{if(!bridge||event.source!==$('#plugin-frame').contentWindow||workspace.hidden)return;const m=event.data;if(!m||m.protocol!=='screen-plugin-ui-v1')return;const id=bridge,frame=$('#plugin-frame');const current=()=>id===bridge&&frame===$('#plugin-frame');try{if(m.type==='resize'){if(typeof m.height==='number'&&Number.isFinite(m.height)){const height=Math.max(320,Math.min(20000,Math.ceil(m.height)));if(frame.style.height!==height+'px')frame.style.height=height+'px';}return}if(m.type==='ready'||m.type==='get_settings'){context();return}if(m.type==='save_settings'){await api(id,'settings',m.settings);if(current())context()}else if(m.type==='run'){await api(id,'run',{action:typeof m.action==='string'?m.action:'refresh',...(typeof m.channel==='string'?{channel:m.channel}:{})})}else{return}if(current())reply({type:'result',request_id:String(m.request_id??'').slice(0,80),ok:true});}catch(error){if(current())reply({type:'result',request_id:String(m.request_id??'').slice(0,80),ok:false,error:error.message})}}));
+ addEventListener('message',wrap(async event=>{if(!bridge||event.source!==$('#plugin-frame').contentWindow||workspace.hidden)return;const m=event.data;if(!m||m.protocol!=='screen-plugin-ui-v1')return;const id=bridge,frame=$('#plugin-frame');const current=()=>id===bridge&&frame===$('#plugin-frame');try{if(m.type==='resize'){if(typeof m.height==='number'&&Number.isFinite(m.height)){const height=Math.max(320,Math.min(20000,Math.ceil(m.height)));if(frame.style.height!==height+'px')frame.style.height=height+'px';}return}if(m.type==='ready'||m.type==='get_settings'){context();return}if(m.type==='autosave_settings'){queueAutosave(id,frame,m);return}if(m.type==='save_settings'){await api(id,'settings',m.settings);if(current())context()}else if(m.type==='run'){await api(id,'run',{action:typeof m.action==='string'?m.action:'refresh',...(typeof m.channel==='string'?{channel:m.channel}:{})})}else{return}if(current())reply({type:'result',request_id:String(m.request_id??'').slice(0,80),ok:true});}catch(error){if(current())reply({type:'result',request_id:String(m.request_id??'').slice(0,80),ok:false,error:error.message})}}));
  document.querySelectorAll('[data-plugin-close]').forEach(b=>b.onclick=()=>$('#'+b.dataset.pluginClose).close());
  let installPreview=null,installSequence=0,installBusy=false;
  const installSubmit=$('#plugin-install-form [type=submit]'),packagePreview=$('#plugin-package-preview');
@@ -75,7 +115,7 @@ export function mountPlugins({getState,refresh,onView,toast,editSource,command})
    toast(result.action==='update'?'插件已更新，原有数据和启用状态已保留':'插件已安装；点击启用后开始运行');
   }finally{installBusy=false;$('#plugin-file').disabled=false;$('#install-plugin').disabled=false;installSubmit.disabled=!installPreview;}
  });
- $('#plugin-settings-form').onsubmit=wrap(async e=>{e.preventDefault();const p=plugin(selected),values={...p.settings};for(const f of hostFields(p)){const input=e.currentTarget.elements.namedItem(f.key);values[f.key]=f.type==='boolean'?input.checked:f.type==='number'?Number(input.value):input.value;}await api(selected,'settings',values);$('#plugin-settings').close();toast('设置已保存')});
+ $('#plugin-settings-form').onsubmit=wrap(async e=>{e.preventDefault();const p=plugin(selected),values={};for(const f of hostFields(p)){const input=e.currentTarget.elements.namedItem(f.key);values[f.key]=f.type==='boolean'?input.checked:f.type==='number'?Number(input.value):input.value;}await api(selected,'patch_settings',values);$('#plugin-settings').close();toast('设置已保存')});
  $('#plugin-list').onclick=wrap(async e=>{const b=e.target.closest('[data-plugin-action]');if(!b)return;const id=b.closest('[data-plugin-id]').dataset.pluginId,p=plugin(id);switch(b.dataset.pluginAction){case'toggle':await api(id,p.enabled?'disable':'enable');break;case'settings':settings(id);break;case'home':onView('plugin:'+id);break;case'run':await api(id,'run',{action:b.dataset.action??'refresh'});break;case'source':if(b.dataset.source??p.source)editSource(b.dataset.source??p.source);break;case'uninstall':uninstall=id;$('#plugin-uninstall').showModal();break;case'export':{const r=await fetch('/control/plugins/'+id+'/export',{headers:{'x-control-token':getState().token}});if(!r.ok)throw Error(await r.text());const url=URL.createObjectURL(await r.blob());const link=document.createElement('a');link.href=url;link.download=id+'.screen-plugin.zip';link.click();setTimeout(()=>URL.revokeObjectURL(url),2000);toast('已导出代码包，不包含个人设置与私有数据');break;}}});
  $('#plugin-uninstall-confirm').onclick=wrap(async()=>{await api(uninstall,'uninstall');$('#plugin-uninstall').close();toast('插件已卸载')});
  return {activate,render(state){const list=state.plugins??[];

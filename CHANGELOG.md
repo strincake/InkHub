@@ -1,5 +1,12 @@
 # 更新记录
 
+## 0.1.2
+
+- GitHub Actions 构建 Windows、Linux 和 macOS，并提供单独的插件包。
+- 便签编辑自动保存并提交屏幕更新。
+- 工作搭子新增 Claude Code、Gemini CLI 和 OpenCode 本地事件适配。
+- 新增天气、专注计时和今日清单。
+
 ## 0.1.1
 
 - 外部来源支持最长 3 秒提示音：HTTP WAV 接口与 Rust/Python 封装，原 SDK UDP Opus 托管；声音绑定画面版本，支持重试去重、暂停失效和分片完整性校验。

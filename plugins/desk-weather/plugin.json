@@ -1,0 +1,16 @@
+{
+  "api_version": 1,
+  "id": "desk-weather",
+  "version": "1.0.0",
+  "name": "桌面天气",
+  "description": "显示选定地点的温度、天气、今日高低温和降水概率。断网时标记上次成功数据。",
+  "entry": "main.py",
+  "triggers": {"startup": true},
+  "source_defaults": {"priority": 1, "persistent": true, "ttl_ms": 0},
+  "settings": [
+    {"key": "place", "label": "屏幕地点名称", "type": "text", "default": "上海"},
+    {"key": "latitude", "label": "纬度（南纬填负数）", "type": "number", "min": -90, "max": 90, "default": 31.23},
+    {"key": "longitude", "label": "经度（西经填负数）", "type": "number", "min": -180, "max": 180, "default": 121.47},
+    {"key": "refresh_minutes", "label": "更新间隔（分钟）", "type": "number", "min": 15, "max": 180, "default": 30}
+  ]
+}

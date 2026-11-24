@@ -1,4 +1,4 @@
-"""Prepare SHA256-locked Windows x64 runtime; --compiler also bootstraps local ISCC."""
+"""Prepare SHA256-locked runtime assets and optional Windows installer tools."""
 import argparse
 import hashlib
 import json
@@ -68,8 +68,17 @@ def compiler(asset, chinese_asset):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--compiler', action='store_true')
+    parser.add_argument('--fonts-only', action='store_true')
     args = parser.parse_args()
     assets = json.loads(LOCK.read_text(encoding='utf-8'))['assets']
+    fonts = OUTPUT / 'fonts'
+    licenses = OUTPUT / 'licenses'
+    fonts.mkdir(parents=True, exist_ok=True)
+    licenses.mkdir(parents=True, exist_ok=True)
+    shutil.copy2(download(assets['font']), fonts / 'NotoSansSC.ttf')
+    shutil.copy2(download(assets['font_license']), licenses / 'NotoSansSC-OFL.txt')
+    if args.fonts_only:
+        return
     python = OUTPUT / 'python'
     unpack(download(assets['python']), python)
     packages = python / 'Lib/site-packages'
@@ -79,12 +88,6 @@ def main():
         raise RuntimeError('Expected exactly one embedded Python _pth file')
     pth = pth_files[0]
     pth.write_text(pth.stem + '.zip\n.\nLib/site-packages\nimport site\n', encoding='utf-8')
-    fonts = OUTPUT / 'fonts'
-    licenses = OUTPUT / 'licenses'
-    fonts.mkdir(parents=True, exist_ok=True)
-    licenses.mkdir(parents=True, exist_ok=True)
-    shutil.copy2(download(assets['font']), fonts / 'NotoSansSC.ttf')
-    shutil.copy2(download(assets['font_license']), licenses / 'NotoSansSC-OFL.txt')
     for license_file in python.glob('*LICENSE*'):
         if license_file.is_file():
             shutil.copy2(license_file, licenses / ('Python-' + license_file.name))
