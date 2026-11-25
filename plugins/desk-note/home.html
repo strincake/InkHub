@@ -11,17 +11,18 @@
 @media(max-width:620px){body{padding:16px}.note-layout{grid-template-columns:1fr;gap:16px}.note-sidebar{grid-row:auto;position:static;height:240px}.preview-card{grid-column:auto}.card{padding:18px}.note-head{align-items:flex-start;gap:10px}h1{font-size:22px}.note-head p{max-width:180px}.note-head button{padding:9px 12px}textarea{min-height:180px}}
 </style>
 <main>
- <header class="note-head"><div><h1>便签</h1><p>把想记住的事，留在屏幕上。</p></div><button id="save" type="button" disabled>应用到设备</button></header>
+ <header class="note-head"><div><h1>便签</h1><p>编辑自动保存并更新屏幕队列。</p></div><button id="save" type="button" disabled>立即保存</button></header>
  <div class="note-layout">
   <nav class="card note-sidebar" aria-label="便签管理"><div class="list-head"><h2>我的便签</h2><span id="note-count"></span></div><button id="add-note" type="button" disabled>＋ 新建</button><div id="note-list" aria-label="便签列表"></div></nav>
   <section class="card" id="editor"><div class="editor-head"><h2>编辑便签</h2><button id="delete-note" type="button" disabled>删除当前便签</button></div><div id="empty-editor" hidden>还没有便签，点击左侧“新建”开始。</div><fieldset id="note-fields" disabled><label class="title-toggle" for="show-title">显示标题<input id="show-title" type="checkbox"></label><label id="title-row">屏幕标题<input id="title" maxlength="80" autocomplete="off"></label><label id="notes-row">正文 · 回车换行<textarea id="notes" rows="8" maxlength="16000" placeholder="写下想记住的事…"></textarea></label><label class="font-control" for="font-size">正文字号<input id="font-size" type="number" min="12" max="64" step="1" value="24" required><span>px</span></label></fieldset><p id="message" role="status" aria-live="polite">正在读取设置…</p></section>
-  <section class="card preview-card"><div class="preview-head"><h2>实时预览</h2><span>400 × 300</span></div><canvas id="preview" width="400" height="300" aria-label="当前便签画面预览"></canvas><p class="preview-copy">编辑即时预览，点击“应用到设备”后保存并更新画面。</p></section>
+  <section class="card preview-card"><div class="preview-head"><h2>实时预览</h2><span>400 × 300</span></div><canvas id="preview" width="400" height="300" aria-label="当前便签画面预览"></canvas></section>
  </div>
 </main>
 <script>
 (()=>{
  const protocol='screen-plugin-ui-v1', $=id=>document.getElementById(id);
  let settings={},notes=[],active='',loaded=false,dirty=false,saving=null,revision=0,deviceState={};
+ let hostAutosave=false,timer=null;
  const current=()=>notes.find(n=>n.id===active);
  const send=message=>parent.postMessage({protocol,...message},'*');
  const status=(text,error=false)=>{$('message').textContent=text;$('message').classList.toggle('error',error)};
@@ -51,7 +52,12 @@
   $('title').value=n?.title??'';$('notes').value=n?.text??'';$('show-title').checked=n?.show_title??false;$('font-size').value=n?.font_size??24;$('title-row').hidden=!n?.show_title;
   list();preview();
  }
- function changed(){dirty=true;revision++;status(saving?'正在保存，后续修改仍保留为草稿。':'未应用 · 切换便签保留当前编辑');list();preview()}
+ function changed(){
+  dirty=true;revision++;list();preview();
+  clearTimeout(timer);
+  if(hostAutosave)save(false);
+  else{status('等待自动保存…');timer=setTimeout(()=>save(true),400)}
+ }
  function shorten(text,measure){if(measure(text)<=356)return text;const chars=Array.from(text);while(chars.length&&measure(chars.join('')+'…')>356)chars.pop();return chars.join('')+'…'}
  // Match the host's json.dumps(..., ensure_ascii=False) byte budget.
  function settingsJSON(value){
@@ -90,29 +96,38 @@
   notes.push({id,title:'',text:'',show_title:false,font_size:24});active=id;changed();editor();$('note-list').lastElementChild?.scrollIntoView({block:'nearest'});$('notes').focus({preventScroll:true});
  };
  $('delete-note').onclick=()=>{const i=notes.findIndex(n=>n.id===active);if(i<0)return;notes.splice(i,1);active=notes[Math.min(i,notes.length-1)]?.id??'';changed();editor()};
- $('save').onclick=()=>{
-  if(!loaded||saving)return;
-  if(!$('font-size').validity.valid){$('font-size').reportValidity();return}
+ function save(immediate){
+  clearTimeout(timer);
+  if(!loaded||(!hostAutosave&&saving))return;
   const document={version:2,notes:structuredClone(notes)};
   if(new TextEncoder().encode(settingsJSON(document)).length>32768){status('便签内容过多，请精简后再保存（总计最多 32 KiB）。',true);return}
-  const request_id='save-note-'+Date.now();saving={request_id,revision};$('save').disabled=true;status('正在保存…');
-  send({type:'save_settings',request_id,settings:{...settings,document,active_note:active}});
- };
+  const request_id='save-note-'+Date.now()+'-'+Math.random().toString(36).slice(2);
+  const values={document,active_note:active};
+  saving={request_id,revision};dirty=true;
+  status(immediate?'正在保存…':'等待自动保存…');
+  if(hostAutosave)send({type:'autosave_settings',request_id,settings:values,immediate});
+  else send({type:'save_settings',request_id,settings:{...settings,...values}});
+ }
+ $('save').onclick=()=>save(true);
  addEventListener('message',event=>{
   if(event.source!==parent||event.data?.protocol!==protocol)return;const m=event.data;
   if(m.type==='context'){
-   settings=m.settings??{};deviceState=m.state??{};theme(m.appearance);
+   settings=m.settings??{};deviceState=m.state??{};hostAutosave=m.autosave_settings===true;theme(m.appearance);
    if(!loaded||(!dirty&&!saving)){
-    notes=readNotes(settings);const ids=notes.map(n=>n.id);active=ids.includes(deviceState.current_note)?deviceState.current_note:ids.includes(settings.active_note)?settings.active_note:(notes[Number(deviceState.index)||0]?.id??ids[0]??'');editor();
-    status(m.enabled===false?'插件未启用，保存后将在启用时更新画面。':'已连接 · 编辑后应用到设备');
+    notes=readNotes(settings);const ids=notes.map(n=>n.id);
+    const candidates=m.autosave_pending?[settings.active_note,deviceState.current_note]:[deviceState.current_note,settings.active_note];
+    active=candidates.find(id=>ids.includes(id))??notes[Number(deviceState.index)||0]?.id??ids[0]??'';editor();
+    status(m.enabled===false?'保存后将在启用时更新画面。':'已连接 · 自动保存已开启');
    }else preview();
-   loaded=true;$('add-note').disabled=false;$('save').disabled=!!saving;
+   loaded=true;$('add-note').disabled=false;$('save').disabled=false;
   }
   if(m.type==='appearance')theme(m.appearance);
   if(m.type==='state'){deviceState=m.state??{};preview()}
   if(m.type==='result'&&saving&&m.request_id===saving.request_id){
-   const unchanged=revision===saving.revision;saving=null;$('save').disabled=false;
-   if(m.ok){dirty=!unchanged;status(unchanged?'已保存，启用时自动更新画面。':'已保存，后续修改尚未应用。')}else{dirty=true;status(m.error||'保存失败，请重试。',true)}
+   const unchanged=revision===saving.revision;saving=null;
+   if(!unchanged){if(!hostAutosave)save(true);return}
+   dirty=!m.ok;
+   status(m.ok?'已保存 · 已提交屏幕更新':(m.error||'保存失败，请重试。'),!m.ok);
   }
  });
  let lastHeight=0,scheduled=false;

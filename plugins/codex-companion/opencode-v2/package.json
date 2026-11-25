@@ -1,0 +1,7 @@
+{
+  "name": "inkhub-companion",
+  "private": true,
+  "type": "module",
+  "main": "./index.js",
+  "dependencies": {"@opencode/plugin": "*"}
+}

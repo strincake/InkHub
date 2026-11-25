@@ -1,12 +1,12 @@
 {
   "api_version": 1,
   "id": "codex-companion",
-  "name": "Codex 工作搭子",
-  "version": "1.0.0",
-  "description": "本机 Codex 任务跟随、像素宠物、四任务分页和设备提示音。按真实元数据判断工作、待确认、完成与停止；不保存问题、答案或工具参数。设备由墨枢统一管理。",
+  "name": "Agent 工作搭子",
+  "version": "1.1.0",
+  "description": "跟随本机 Codex、Claude Code、Gemini CLI 和 OpenCode 的任务状态，支持分页与设备提示音。",
   "entry": "main.py",
   "homepage": "home.html",
-  "navigation_title": "Codex 工作搭子",
+  "navigation_title": "工作搭子",
   "triggers": {
     "startup": true,
     "interval_seconds": 3,

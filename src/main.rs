@@ -27,6 +27,7 @@ mod runtime;
 #[cfg(windows)]
 mod tray;
 mod plugins;
+mod ai;
 
 type ApiResult = Result<Json<Value>, (StatusCode, String)>;
 fn bad(e: impl ToString) -> (StatusCode, String) {
@@ -290,6 +291,7 @@ async fn command(State(a): State<Arc<App>>, h: HeaderMap, Json(c): Json<Command>
             i.audio_pending.clear();
             i.recording = false;
             i.scheduler.current = None;
+            i.mode = "simulation".into();
             i.health = "已断开，需手动连接".into();
             log(&mut i, now, "用户主动断开设备，取消自动重连");
             drop(i);
@@ -863,6 +865,9 @@ async fn run() -> Result<(), Box<dyn std::error::Error>> {
             }),
         )
         .route("/controls.js", get(|| async { ([(header::CONTENT_TYPE, "text/javascript")], include_str!("../web/controls.js")) }))
+        .route("/favicon.ico", get(|| async { ([(header::CONTENT_TYPE, "image/x-icon")], include_bytes!("../packaging/windows/InkHub.ico").as_slice()) }))
+        .route("/ai.js", get(|| async { ([(header::CONTENT_TYPE, "text/javascript")], include_str!("../web/ai.js")) }))
+        .route("/control/ai", post(ai::request))
         .route("/control/state", get(state))
         .route(
             "/plugins.js",
@@ -877,6 +882,7 @@ async fn run() -> Result<(), Box<dyn std::error::Error>> {
         .route("/control/screen.png", get(screen))
         .route("/control/image/{id}", get(source_image).post(upload))
         .route("/control/plugins/install", post(plugins::install))
+        .route("/control/plugins/inspect", post(plugins::inspect))
         .route("/control/plugins/{id}", post(plugins::control))
         .route("/control/plugins/{id}/export", get(plugins::export))
         .route("/control/plugin-ui/{id}", get(plugins::page))

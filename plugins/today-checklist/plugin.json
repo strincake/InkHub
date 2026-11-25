@@ -1,0 +1,22 @@
+{
+  "api_version": 1,
+  "id": "today-checklist",
+  "version": "1.0.0",
+  "name": "今日清单",
+  "description": "设置每日重复事项。屏幕上下键选择，确认键勾选，按电脑本地日期每天重置勾选。",
+  "entry": "main.py",
+  "triggers": {
+    "startup": true,
+    "keys": true,
+    "interval_seconds": 60,
+    "actions": [
+      {"id": "previous", "label": "上一项"},
+      {"id": "next", "label": "下一项"},
+      {"id": "toggle", "label": "勾选 / 取消当前项"}
+    ]
+  },
+  "source_defaults": {"priority": 2, "persistent": true, "ttl_ms": 0, "hold_ms": 10000},
+  "settings": [
+    {"key": "items", "label": "每日事项（一行一项，最多 24 项）", "type": "textarea", "default": "确认今天最重要的一件事\n离开座位活动一下\n下班前记录进度"}
+  ]
+}

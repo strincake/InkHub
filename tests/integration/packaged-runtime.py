@@ -6,6 +6,7 @@ from urllib.request import Request,build_opener,ProxyHandler
 from PIL import Image
 ROOT=Path(__file__).resolve().parents[2]
 VERSION=tomllib.loads((ROOT/'Cargo.toml').read_text(encoding='utf-8'))['package']['version']
+IDS=set((ROOT/'packaging/builtin-plugins.txt').read_text(encoding='utf-8').splitlines())
 OPENER=build_opener(ProxyHandler({}))
 RUN=r'Software\Microsoft\Windows\CurrentVersion\Run'
 def wait(fn,seconds=20):
@@ -43,11 +44,18 @@ def main():
         try:
             child=start();ready=wait(state)
             assert ready['application']['packaged'] and ready['application']['autostart_supported']
-            assert {p['id'] for p in ready['plugins']}=={'desk-note','local-gallery','codex-companion'}
+            assert {p['id'] for p in ready['plugins']}==IDS
             assert all(not p['enabled'] and p['last_run'] is None for p in ready['plugins'])
             assert (profile/'InkHub/settings.json').is_file()
             assert not (app.parent/'settings.json').exists()
             checks.append('isolated_install_uses_own_python_and_per_user_data_without_system_python')
+            # Isolated embedded Python must resolve the AI bridge's sibling module too.
+            import base64,zipfile
+            skill=post('/control/ai',{'op':'skill'})
+            with zipfile.ZipFile(io.BytesIO(base64.b64decode(skill['zip_base64']))) as archive:
+                assert 'name: inkhub-plugin' in archive.read('inkhub-plugin/SKILL.md').decode('utf-8')
+                assert 'ctx.show' in archive.read('inkhub-plugin/references/plugin-development.md').decode('utf-8')
+            checks.append('bundled_ai_bridge_and_embedded_skill_work_without_system_python')
             duplicate=subprocess.run([str(app),'--no-browser','--autostart','--port',str(port)],cwd=folder,env=env,stdout=subprocess.DEVNULL,stderr=subprocess.PIPE,timeout=10)
             assert duplicate.returncode==0 and child.poll() is None
             checks.append('second_launch_reuses_existing_instance_without_port_conflict')
@@ -63,7 +71,7 @@ def main():
             checks.append('autostart_settings_write_and_remove_current_user_run_entry')
             plugin('desk-note','disable');plugin('local-gallery','uninstall');stop()
             child=start();ready=wait(state)
-            assert {p['id'] for p in ready['plugins']}=={'desk-note','codex-companion'}
+            assert {p['id'] for p in ready['plugins']}==IDS-{'local-gallery'}
             assert all(not p['enabled'] for p in ready['plugins'])
             checks.append('restart_preserves_user_plugin_choices')
             stop()

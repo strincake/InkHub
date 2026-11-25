@@ -25,6 +25,12 @@ def validate_settings(fields,values):
         if not valid:raise ValueError('设置字段类型或范围错误：'+f['key'])
         result[f['key']]=value
     return result
+
+def merge_settings(fields,values):
+    # Keep compatible saved values; new fields use defaults and removed fields retire.
+    known={f['key'] for f in fields}
+    try:return validate_settings(fields,{k:v for k,v in values.items() if k in known})
+    except ValueError as error:raise ValueError('原插件设置与新版本不兼容，未更新：'+str(error)) from error
 def validate_manifest(m,names):
     if not isinstance(m,dict) or type(m.get('api_version')) is not int or m.get('api_version')!=1:raise ValueError('仅支持插件 API 1')
     if not SLUG.fullmatch(m.get('id','')):raise ValueError('插件 ID 应为小写字母开头的英文标识')
@@ -88,14 +94,26 @@ def inspect_package(data):
             if stat.S_ISLNK(mode) or (stat.S_IFMT(mode) not in (0,stat.S_IFREG,stat.S_IFDIR)):raise ValueError('插件不允许包含链接或特殊文件')
             if entry.file_size>8*1024*1024 or entry.file_size>max(1,entry.compress_size)*1000:raise ValueError('插件压缩文件展开过大')
             if not entry.is_dir():names.add(name)
+        files={name.casefold() for name in names}
+        for name in seen:
+            for parent in PurePosixPath(name).parents:
+                if str(parent) in files:raise ValueError('插件文件与目录路径冲突')
         if 'plugin.json' not in names or z.getinfo('plugin.json').file_size>65536:raise ValueError('ZIP 根目录需要 plugin.json')
         manifest=json.loads(z.read('plugin.json').decode('utf-8'))
-        return validate_manifest(manifest,names)
-def install_package(data,root):
+        manifest=validate_manifest(manifest,names)
+        damaged=z.testzip()
+        if damaged:raise ValueError('插件文件校验失败：'+damaged)
+        return manifest
+def install_package(data,root,update_id=None):
     manifest=inspect_package(data);root=Path(root).resolve();packages=root/'packages';packages.mkdir(parents=True,exist_ok=True)
     target=packages/manifest['id']
-    if target.exists():raise ValueError('已安装同 ID 插件；请先卸载，再安装新版本')
+    if update_id is not None:
+        if not SLUG.fullmatch(update_id) or manifest['id']!=update_id:raise ValueError('更新包的插件 ID 不匹配')
+        if not target.is_dir():raise ValueError('待更新插件不存在')
+        if target.is_symlink() or (hasattr(target,'is_junction') and target.is_junction()) or target.resolve().parent!=packages.resolve():raise ValueError('插件目录越界，未更新')
+    elif target.exists():raise ValueError('已安装同 ID 插件，请使用更新操作')
     staging=packages/('staging-'+uuid.uuid4().hex);staging.mkdir()
+    backup=packages/('backup-'+uuid.uuid4().hex)
     try:
         with zipfile.ZipFile(io.BytesIO(data)) as z:
             for info in z.infolist():
@@ -103,9 +121,15 @@ def install_package(data,root):
                 if info.is_dir():dest.mkdir(parents=True,exist_ok=True)
                 else:dest.parent.mkdir(parents=True,exist_ok=True);dest.write_bytes(z.read(info))
         (staging/'plugin.json').write_text(json.dumps(manifest,ensure_ascii=False,indent=2),encoding='utf-8')
-        staging.rename(target)
+        if update_id is not None:target.rename(backup)
+        try:staging.rename(target)
+        except OSError:
+            if backup.exists():backup.rename(target)
+            raise
     finally:
         if staging.exists() and staging.resolve().parent==packages.resolve():shutil.rmtree(staging)
+    # A cleanup failure must not report the already committed replacement as failed.
+    if backup.exists() and backup.resolve().parent==packages.resolve():shutil.rmtree(backup,ignore_errors=True)
     return manifest
 def export_package(root,plugin_id):
     if not SLUG.fullmatch(plugin_id):raise ValueError('插件 ID 无效')
@@ -124,6 +148,10 @@ if __name__=='__main__':
     try:
         if sys.argv[1]=='export':sys.stdout.buffer.write(export_package(sys.argv[2],sys.argv[3]));sys.exit(0)
         if sys.argv[1]=='install':result=install_package(sys.stdin.buffer.read(10*1024*1024+1),Path(sys.argv[2]))
+        elif sys.argv[1]=='inspect':result=inspect_package(sys.stdin.buffer.read(10*1024*1024+1))
+        elif sys.argv[1]=='update':result=install_package(sys.stdin.buffer.read(10*1024*1024+1),Path(sys.argv[2]),update_id=sys.argv[3])
+        elif sys.argv[1]=='merge-settings':
+            body=json.load(sys.stdin);result=merge_settings(body['fields'],body['values'])
         elif sys.argv[1]=='validate-settings':
             body=json.load(sys.stdin);result=validate_settings(body['fields'],body['values'])
         else:raise ValueError('未知插件操作')

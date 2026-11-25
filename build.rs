@@ -7,18 +7,22 @@ fn main() {
     println!("cargo:rerun-if-changed=scripts/pack_plugin.py");
     println!("cargo:rerun-if-changed=python/plugin_tools.py");
     let mut generated = String::from("pub const PACKAGES: &[(&str, &[u8])] = &[\n");
-    for id in ["desk-note", "local-gallery", "codex-companion"] {
+    println!("cargo:rerun-if-changed=packaging/builtin-plugins.txt");
+    let ids = fs::read_to_string(root.join("packaging/builtin-plugins.txt")).unwrap();
+    for id in ids.lines().filter(|line| !line.is_empty()) {
         println!("cargo:rerun-if-changed=plugins/{id}");
         if env::var("PROFILE").as_deref() != Ok("release") {
             continue;
         }
         let archive = out.join(format!("{id}.screen-plugin.zip"));
-        let result = Command::new("python")
+        let python = env::var_os("INKHUB_PYTHON")
+            .unwrap_or_else(|| if cfg!(windows) { "python".into() } else { "python3".into() });
+        let result = Command::new(python)
             .arg(root.join("scripts/pack_plugin.py"))
             .arg(root.join("plugins").join(id))
             .arg(&archive)
             .output()
-            .expect("Release 内置插件打包需要可用的 python 命令");
+            .expect("Release 内置插件打包需要可用的 Python 3");
         assert!(
             result.status.success(),
             "内置插件 {id} 打包失败：{}",

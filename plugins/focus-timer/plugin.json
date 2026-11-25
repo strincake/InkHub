@@ -1,0 +1,24 @@
+{
+  "api_version": 1,
+  "id": "focus-timer",
+  "version": "1.0.0",
+  "name": "专注计时",
+  "description": "手动开始专注或休息，支持暂停、继续和重置。网页按秒显示，墨水屏按分钟更新。",
+  "entry": "main.py",
+  "homepage": "home.html",
+  "triggers": {
+    "startup": true,
+    "keys": true,
+    "actions": [
+      {"id": "start-focus", "label": "开始专注"},
+      {"id": "start-break", "label": "开始休息"},
+      {"id": "toggle", "label": "暂停 / 继续"},
+      {"id": "reset", "label": "重置"}
+    ]
+  },
+  "source_defaults": {"priority": 3, "persistent": true, "ttl_ms": 70000, "hold_ms": 15000},
+  "settings": [
+    {"key": "focus_minutes", "label": "专注时长（分钟）", "type": "number", "min": 1, "max": 180, "default": 25},
+    {"key": "break_minutes", "label": "休息时长（分钟）", "type": "number", "min": 1, "max": 60, "default": 5}
+  ]
+}

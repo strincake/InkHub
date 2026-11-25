@@ -22,6 +22,18 @@ def package(id,code):
  with zipfile.ZipFile(data,'w',zipfile.ZIP_DEFLATED) as z:
   z.writestr('plugin.json',json.dumps({'api_version':1,'id':id,'name':id,'version':'1','entry':'main.py','triggers':{'startup':True}}));z.writestr('main.py',code)
  return data.getvalue()
+
+def revise_package(data,version,settings=None):
+ output=io.BytesIO()
+ with zipfile.ZipFile(io.BytesIO(data)) as old,zipfile.ZipFile(output,'w',zipfile.ZIP_DEFLATED) as new:
+  for name in old.namelist():
+   content=old.read(name)
+   if name=='plugin.json':
+    manifest=json.loads(content);manifest['version']=version
+    if settings is not None:manifest['settings']=settings
+    content=json.dumps(manifest).encode()
+   new.writestr(name,content)
+ return output.getvalue()
 def main():
  checks=[];opener=build_opener(ProxyHandler({}));process=None
  with tempfile.TemporaryDirectory(prefix='plugin-test-',dir=TEMP) as d:
@@ -50,7 +62,14 @@ def main():
    assert call('/control/plugins/install',sample,auth=False)[0]==403
    assert call('/control/plugins/install',sample)[0]==200;assert not plugin('desk-note')['enabled'];assert len(state()['sources'])==0
    checks.append('trusted_zip_install_requires_auth_and_does_not_execute')
-   assert call('/control/plugins/install',sample)[0]==400;checks.append('duplicate_install_does_not_overwrite')
+   assert call('/control/plugins/inspect',sample,auth=False)[0]==403
+   code,preview=call('/control/plugins/inspect',revise_package(sample,'2.0'))
+   assert code==200,(code,preview)
+   assert preview['action']=='update' and preview['version']=='2.0' and preview['previous_version']==plugin('desk-note')['manifest']['version']
+   code,result=call('/control/plugins/install',revise_package(sample,'2.0'))
+   assert code==200 and result['action']=='update',(code,result)
+   assert plugin('desk-note')['manifest']['version']=='2.0' and not plugin('desk-note')['enabled'] and plugin('desk-note')['last_run'] is None
+   checks.append('same_install_entry_detects_update_and_keeps_disabled_plugin_inactive')
    cmd('desk-note','enable');wait(lambda:settled('desk-note'));wait(lambda:state()['current'] is not None)
    source=plugin('desk-note')['source'];assert state()['queue']['rows'][0]['transport']=='plugin';checks.append('startup_trigger_registers_source_and_displays')
    old=next(s['config']['revision'] for s in state()['sources'] if s['config']['id']==source)
@@ -76,6 +95,24 @@ def main():
    exported=opener.open(Request(url+'/control/plugins/desk-note/export',headers={'x-control-token':token}),timeout=10).read()
    with zipfile.ZipFile(io.BytesIO(exported)) as z:assert 'plugin.json' in z.namelist() and all('record.json' not in n and not n.startswith('data/') for n in z.namelist());assert '我的私人便签'.encode() not in exported
    checks.append('share_export_contains_code_not_private_settings_or_state')
+   wait(lambda:settled('desk-note'))
+   before_state=plugin('desk-note')['state']
+   private=config.with_suffix('.plugins')/'data/desk-note/files/private.txt';private.parent.mkdir(parents=True,exist_ok=True);private.write_text('private data')
+   assert call('/control/plugins/install',b'broken ZIP')[0]==400
+   assert plugin('desk-note')['enabled'] and plugin('desk-note')['manifest']['version']=='2.0'
+   incompatible=list(plugin('desk-note')['manifest']['settings'])
+   incompatible=[{**f,'type':'number','default':1} if f['key']=='title' else f for f in incompatible]
+   assert call('/control/plugins/install',revise_package(sample,'bad',incompatible))[0]==400
+   assert plugin('desk-note')['enabled'] and plugin('desk-note')['settings']==values
+   fields=list(plugin('desk-note')['manifest']['settings'])+[{'key':'new_setting','label':'新增项','type':'text','default':'new default'}]
+   code,result=call('/control/plugins/install',revise_package(sample,'3.0',fields));assert code==200,(code,result)
+   wait(lambda:settled('desk-note'))
+   updated=plugin('desk-note');assert updated['manifest']['version']=='3.0' and updated['enabled']
+   assert updated['settings']=={**values,'new_setting':'new default'} and updated['state']==before_state
+   assert private.read_text()=='private data'
+   source=updated['source'];assert next(s['config']['priority'] for s in state()['sources'] if s['config']['id']==source)==2
+   checks.append('update_preserves_settings_state_files_display_rules_and_enabled_status')
+   checks.append('invalid_or_incompatible_update_leaves_old_plugin_running')
    error=package('broken','def handle(ctx,event):\n raise RuntimeError("expected isolated failure")')
    assert call('/control/plugins/install',error)[0]==200;cmd('broken','enable');wait(lambda:plugin('broken')['error']);assert plugin('desk-note')['enabled'];checks.append('plugin_failure_isolated_and_reported')
    env=package('env-check','import os\ndef handle(ctx,event):\n ctx.state["secret_inherited"]="SCREEN_SCHEDULER_KEY" in os.environ')
@@ -84,11 +121,18 @@ def main():
    slow=package('slow','import time\ndef handle(ctx,event):\n time.sleep(60)')
    assert call('/control/plugins/install',slow)[0]==200;cmd('slow','enable');wait(lambda:plugin('slow')['running']);cmd('slow','disable');wait(lambda:not plugin('slow')['running'],seconds=4);assert plugin('slow')['source'] is None
    checks.append('disable_cancels_worker_and_revokes_source')
+   cmd('slow','enable');wait(lambda:plugin('slow')['running'])
+   replacement=package('slow','def handle(ctx,event):\n ctx.state["updated"]=True')
+   code,result=call('/control/plugins/install',replacement);assert code==200,(code,result)
+   wait(lambda:settled('slow'));assert plugin('slow')['state']['updated'] is True
+   checks.append('update_cancels_running_old_worker_before_replacing_code')
+   assert call('/control/plugins/install',slow)[0]==200
    cmd('slow','enable');print('checking worker 15-second deadline...',flush=True);wait(lambda:plugin('slow')['error'],seconds=18);assert '15' in plugin('slow')['error'];checks.append('worker_timeout_keeps_host_responsive')
    for id in ['slow','broken','env-check']:cmd(id,'uninstall');assert plugin(id) is None
    checks.append('uninstall_stops_and_removes_only_selected_plugins')
    before=plugin('desk-note')['settings'];call('/control/command',{'op':'stop'});process.wait(8);process=start();token=wait(lambda:state()['token']);wait(lambda:settled('desk-note'))
    assert plugin('desk-note')['settings']==before and plugin('desk-note')['enabled'];source=plugin('desk-note')['source'];assert next(s['config']['priority'] for s in state()['sources'] if s['config']['id']==source)==2
+   assert plugin('desk-note')['manifest']['version']=='3.0' and private.read_text()=='private data'
    checks.append('restart_restores_enabled_plugin_settings_state_and_display_rules')
    cmd('desk-note','uninstall');assert not config.with_suffix('.plugins').joinpath('packages/desk-note').exists();assert not config.with_suffix('.plugins').joinpath('data/desk-note').exists()
    assert call('/control/plugins/install',exported)[0]==200;assert plugin('desk-note')['settings']['title']!='我的私人便签';checks.append('exported_zip_reinstalls_cleanly_without_personal_data')

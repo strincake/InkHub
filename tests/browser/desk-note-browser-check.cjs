@@ -19,6 +19,7 @@ const out=path.join(root,'artifacts/tests/browser/desk-note');fs.mkdirSync(out,{
   const frame=page.frameLocator('iframe');
   await frame.locator('#add-note').waitFor();
   assert.equal(await frame.locator('.note-item').count(),3);
+  await page.evaluate(()=>fail=true);
   await frame.locator('#show-title').uncheck();
   await frame.locator('#notes').fill('第一行正文\n\n第二行正文');
   assert.equal(await frame.locator('.note-item[aria-pressed=true] .note-name').textContent(),'第一行正文 第二行正文');
@@ -37,8 +38,6 @@ const out=path.join(root,'artifacts/tests/browser/desk-note');fs.mkdirSync(out,{
   assert.equal(await frame.locator('#font-size').inputValue(),'48');
   await page.evaluate(()=>context());
   assert.equal(await frame.locator('#notes').inputValue(),'第一行正文\n\n第二行正文');
-  await page.evaluate(()=>fail=true);
-  await frame.locator('#save').click();
   await frame.locator('#message').filter({hasText:'模拟保存失败'}).waitFor();
   assert.equal(await frame.locator('#notes').inputValue(),'第一行正文\n\n第二行正文');
   await page.evaluate(()=>fail=false);
@@ -57,7 +56,6 @@ const out=path.join(root,'artifacts/tests/browser/desk-note');fs.mkdirSync(out,{
   assert.equal(await frame.locator('.note-item').count(),3);
   for(let i=0;i<3;i++)await frame.locator('#delete-note').click();
   assert.equal(await frame.locator('#notes').isDisabled(),true);
-  await frame.locator('#save').click();
   await frame.locator('#message').filter({hasText:'已保存'}).waitFor();
   assert.deepEqual((await page.evaluate(()=>saved)).document.notes,[]);
   await frame.locator('#add-note').click();

@@ -19,6 +19,7 @@ def _view(ctx, model, health):
         current=task_key(current) if current else None,
         total=len(tasks),
         inbox=str(ctx.data_dir / 'inbox'),
+        bridge=str(ctx.package_dir / 'agent_hook.py'),
         tasks=[dict(title=t['event']['title'], label=task_label(t),
                     source='Codex 本机' if t['source'] == 'codex' else (t['event'].get('agent') or 'Agent'),
                     progress=t['event'].get('progress'), selected=task_key(t) == (task_key(current) if current else None))
