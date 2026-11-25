@@ -28,7 +28,7 @@ class Context:
     def font(self,size=24):
         for path in (os.environ.get('INKHUB_FONT',''),'C:/Windows/Fonts/msyh.ttc','C:/Windows/Fonts/segoeui.ttf','/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf'):
             if path and Path(path).is_file():return ImageFont.truetype(path,size)
-        return ImageFont.load_default()
+        return ImageFont.load_default(size=size)
     def show(self,image,format='mono'):
         if format not in ('mono','gray4','gray16'):raise ValueError('format 应为 mono / gray4 / gray16')
         if not isinstance(image,Image.Image):

@@ -3,6 +3,7 @@ import json
 import sys
 import tempfile
 import unittest
+from unittest.mock import patch
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -60,6 +61,12 @@ class Tests(unittest.TestCase):
         small = self.render().convert('L').point(lambda p: 255-p).getbbox()
         self.document(self.item(text='TEST', font_size=48))
         large = self.render().convert('L').point(lambda p: 255-p).getbbox()
+        self.assertGreater(large[3]-large[1], small[3]-small[1] + 10)
+
+    def test_font_fallback_respects_size_without_system_fonts(self):
+        with patch.object(Path, 'is_file', return_value=False):
+            small = self.ctx.font(12).getbbox('TEST')
+            large = self.ctx.font(48).getbbox('TEST')
         self.assertGreater(large[3]-large[1], small[3]-small[1] + 10)
 
     def test_selection_keys_refresh_delete_and_reapply(self):
